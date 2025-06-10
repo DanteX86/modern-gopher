@@ -20,6 +20,17 @@ wheels/
 .installed.cfg
 *.egg
 
+# Large downloads and archives
+*.tar.gz
+*.zip
+*.tgz
+
+# Generated files and temporary files
+*.save
+*.tmp
+test.txt
+neon_burrow_*.json
+*.pyES
 # Virtual Environment
 venv/
 ENV/
