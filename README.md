@@ -26,6 +26,7 @@ A modern, feature-rich terminal-based client for the Gopher protocol built in Py
 - **BookmarkManager**: Complete bookmark system with persistence, search, tags, and visit tracking
 - **Enhanced Help System**: Comprehensive keyboard shortcuts and feature documentation
 - **Build System**: Integrated Python build CLI for package distribution
+- **Customizable Keybinding System**: Full keybinding customization with context-aware shortcuts, conflict detection, and CLI management
 
 ### 📋 **Planned Features**
 - **Plugin Architecture**: Extensible item type handlers
@@ -72,7 +73,43 @@ modern-gopher browse gopher://gopher.floodgap.com
 
 # Fetch a Gopher resource
 modern-gopher get gopher://gopher.floodgap.com/0/gopher/proxy.txt
+
+# Manage keybindings
+modern-gopher keybindings list   # Show all keybindings
+modern-gopher keybindings reset  # Reset to defaults
 ```
+
+### Customizable Keybindings
+
+Modern Gopher features a comprehensive keybinding system that allows full customization of keyboard shortcuts:
+
+#### Default Keybindings
+- **Navigation**: `↑`/`k` (up), `↓`/`j` (down), `Enter` (open), `Backspace` (back)
+- **Global**: `q`/`Ctrl+C` (quit), `h`/`F1` (help)
+- **Browser**: `r`/`F5` (refresh), `g`/`Ctrl+L` (go to URL)
+- **Bookmarks**: `b`/`Ctrl+B` (toggle), `m` (list)
+- **Search**: `/`/`Ctrl+F` (search), `Escape` (clear)
+
+#### Keybinding Management
+```bash
+# List all current keybindings
+modern-gopher keybindings list
+
+# Reset to default keybindings
+modern-gopher keybindings reset
+
+# Edit keybindings manually
+$EDITOR ~/.config/modern-gopher/keybindings.json
+```
+
+#### Features
+- **Context-aware**: Different keybindings for browser, content, search contexts
+- **Conflict detection**: Prevents conflicting keybinding assignments
+- **Backup/restore**: Automatic backup before resetting
+- **CLI management**: Full command-line interface for keybinding management
+- **Persistent storage**: Keybindings saved to `~/.config/modern-gopher/keybindings.json`
+
+See [docs/KEYBINDINGS.md](docs/KEYBINDINGS.md) for comprehensive documentation.
 
 ## Development
 

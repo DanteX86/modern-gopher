@@ -150,6 +150,7 @@ class GopherBrowser:
         # Initialize keybinding manager
         self.keybinding_manager = KeyBindingManager()
         self.current_context = KeyContext.BROWSER
+        self._last_keybinding_context = None  # Track context changes
         
         # Create UI components
         self.setup_ui()
@@ -220,7 +221,7 @@ class GopherBrowser:
         """Set up the key bindings for navigation using KeyBindingManager."""
         kb = self.kb
         
-        # Create action mappings
+        # Create action mappings with context awareness
         action_handlers = {
             'navigate_up': lambda event: self._handle_navigate_up(),
             'navigate_down': lambda event: self._handle_navigate_down(),
@@ -235,8 +236,10 @@ class GopherBrowser:
             'history_show': lambda event: self.show_history(),
             'go_to_url': lambda event: self.show_url_input(),
             'go_home': lambda event: self.navigate_to(DEFAULT_URL),
-            'search_directory': lambda event: self._handle_search(),
-            'search_clear': lambda event: self._handle_search_clear(),
+            'search_directory': lambda event: self._handle_search_context_aware(event),
+            'search_clear': lambda event: self._handle_search_clear_context_aware(event),
+            'scroll_up': lambda event: self._handle_scroll_up_context_aware(event),
+            'scroll_down': lambda event: self._handle_scroll_down_context_aware(event),
         }
         
         # Get all bindings for the current context
@@ -254,9 +257,14 @@ class GopherBrowser:
                     
                     # Add all keys for this action
                     try:
-                        @kb.add(pt_key)
-                        def _(event, handler=handler):
-                            handler(event)
+                        # Fix closure bug by creating a factory function
+                        def create_handler(h):
+                            @kb.add(pt_key)
+                            def _(event):
+                                h(event)
+                            return _
+                        
+                        create_handler(handler)
                     except ValueError as e:
                         logger.warning(f"Failed to add keybinding {pt_key} for {action}: {e}")
                         continue
@@ -314,13 +322,102 @@ class GopherBrowser:
     
     def _handle_search(self) -> None:
         """Handle search action based on current context."""
-        if self.current_context == KeyContext.DIRECTORY or not self.current_items:
+        if self.current_items:
             self.show_search_dialog()
     
     def _handle_search_clear(self) -> None:
         """Handle search clear action."""
         if self.is_searching:
             self.clear_search()
+    
+    def _handle_search_context_aware(self, event) -> None:
+        """Handle search action based on current context."""
+        if self.current_context == KeyContext.DIRECTORY and self.current_items:
+            self.show_search_dialog()
+        elif self.current_context == KeyContext.CONTENT:
+            # In content view, could implement text search in the future
+            self.status_bar.text = "Search not available in content view"
+        else:
+            self.status_bar.text = "Search not available in current context"
+    
+    def _handle_search_clear_context_aware(self, event) -> None:
+        """Handle search clear action based on current context."""
+        if self.current_context == KeyContext.SEARCH and self.is_searching:
+            self.clear_search()
+        else:
+            self.status_bar.text = "No active search to clear"
+    
+    def _handle_scroll_up_context_aware(self, event) -> None:
+        """Handle scroll up action based on current context."""
+        if self.current_context == KeyContext.CONTENT:
+            self._handle_scroll_up()
+        elif self.current_context in (KeyContext.DIRECTORY, KeyContext.SEARCH):
+            # In directory/search context, scroll up means navigate up
+            self._handle_navigate_up()
+        else:
+            self.status_bar.text = "Scroll up not available in current context"
+    
+    def _handle_scroll_down_context_aware(self, event) -> None:
+        """Handle scroll down action based on current context."""
+        if self.current_context == KeyContext.CONTENT:
+            self._handle_scroll_down()
+        elif self.current_context in (KeyContext.DIRECTORY, KeyContext.SEARCH):
+            # In directory/search context, scroll down means navigate down
+            self._handle_navigate_down()
+        else:
+            self.status_bar.text = "Scroll down not available in current context"
+    
+    def _update_context(self) -> None:
+        """Update the current keybinding context based on application state."""
+        new_context = self._determine_context()
+        
+        if new_context != self.current_context:
+            logger.debug(f"Context switching from {self.current_context} to {new_context}")
+            self.current_context = new_context
+            
+            # Only rebuild keybindings if context actually changed
+            if new_context != self._last_keybinding_context:
+                self._rebuild_keybindings()
+                self._last_keybinding_context = new_context
+    
+    def _determine_context(self) -> KeyContext:
+        """Determine the appropriate context based on current application state."""
+        # Priority order for context determination:
+        
+        # 1. Search context - when actively searching
+        if self.is_searching:
+            return KeyContext.SEARCH
+        
+        # 2. Content context - when viewing text/binary content (no directory items)
+        if not self.current_items and self.content_view.text:
+            # Check if we're viewing actual content (not just preview)
+            if len(self.content_view.text) > 100:  # Arbitrary threshold for "real content"
+                return KeyContext.CONTENT
+        
+        # 3. Directory context - when viewing directory listings
+        if self.current_items:
+            return KeyContext.DIRECTORY
+        
+        # 4. Default to browser context
+        return KeyContext.BROWSER
+    
+    def _rebuild_keybindings(self) -> None:
+        """Log context change for now - full rebuild during runtime is complex."""
+        logger.info(f"Context changed to {self.current_context.value} - keybinding context updated")
+        # Note: Full keybinding rebuild during runtime requires more complex approach
+        # For now, we just track the context change and use it in action handlers
+    
+    def _handle_scroll_up(self) -> None:
+        """Handle scroll up action in content context."""
+        if hasattr(self.content_view, 'buffer'):
+            # Scroll the content view up
+            self.content_view.buffer.cursor_up(count=5)
+    
+    def _handle_scroll_down(self) -> None:
+        """Handle scroll down action in content context."""
+        if hasattr(self.content_view, 'buffer'):
+            # Scroll the content view down
+            self.content_view.buffer.cursor_down(count=5)
     
     def get_menu_text(self) -> List[Tuple[str, str]]:
         """Get the formatted text for the menu display."""
@@ -548,6 +645,10 @@ class GopherBrowser:
         
         # Update display and status
         self.update_display()
+        
+        # Update context to SEARCH
+        self._update_context()
+        
         if matching_items:
             self.status_bar.text = f"Search: '{query}' - {len(matching_items)} results (ESC to clear)"
         else:
@@ -565,6 +666,10 @@ class GopherBrowser:
             
             # Update display
             self.update_display()
+            
+            # Update context to non-search state
+            self._update_context()
+            
             self.status_bar.text = "Search cleared"
     
     def show_help(self):
@@ -768,6 +873,9 @@ class GopherBrowser:
             
             # Update display
             self.update_display()
+            
+            # Update context based on new state
+            self._update_context()
             
         except GopherProtocolError as e:
             self.content_view.text = f"Error: {e}"
@@ -982,6 +1090,9 @@ class GopherBrowser:
             # Initial navigation (only if session wasn't restored)
             if not session_restored:
                 self.navigate_to(self.current_url)
+            
+            # Set up initial context
+            self._update_context()
             
             # Run the application
             self.app.run()
