@@ -221,7 +221,7 @@ class GopherBrowser:
         """Set up the key bindings for navigation using KeyBindingManager."""
         kb = self.kb
         
-        # Create action mappings
+        # Create action mappings with context awareness
         action_handlers = {
             'navigate_up': lambda event: self._handle_navigate_up(),
             'navigate_down': lambda event: self._handle_navigate_down(),
@@ -236,8 +236,10 @@ class GopherBrowser:
             'history_show': lambda event: self.show_history(),
             'go_to_url': lambda event: self.show_url_input(),
             'go_home': lambda event: self.navigate_to(DEFAULT_URL),
-            'search_directory': lambda event: self._handle_search(),
-            'search_clear': lambda event: self._handle_search_clear(),
+            'search_directory': lambda event: self._handle_search_context_aware(event),
+            'search_clear': lambda event: self._handle_search_clear_context_aware(event),
+            'scroll_up': lambda event: self._handle_scroll_up_context_aware(event),
+            'scroll_down': lambda event: self._handle_scroll_down_context_aware(event),
         }
         
         # Get all bindings for the current context
@@ -320,13 +322,50 @@ class GopherBrowser:
     
     def _handle_search(self) -> None:
         """Handle search action based on current context."""
-        if self.current_context == KeyContext.DIRECTORY or not self.current_items:
+        if self.current_items:
             self.show_search_dialog()
     
     def _handle_search_clear(self) -> None:
         """Handle search clear action."""
         if self.is_searching:
             self.clear_search()
+    
+    def _handle_search_context_aware(self, event) -> None:
+        """Handle search action based on current context."""
+        if self.current_context == KeyContext.DIRECTORY and self.current_items:
+            self.show_search_dialog()
+        elif self.current_context == KeyContext.CONTENT:
+            # In content view, could implement text search in the future
+            self.status_bar.text = "Search not available in content view"
+        else:
+            self.status_bar.text = "Search not available in current context"
+    
+    def _handle_search_clear_context_aware(self, event) -> None:
+        """Handle search clear action based on current context."""
+        if self.current_context == KeyContext.SEARCH and self.is_searching:
+            self.clear_search()
+        else:
+            self.status_bar.text = "No active search to clear"
+    
+    def _handle_scroll_up_context_aware(self, event) -> None:
+        """Handle scroll up action based on current context."""
+        if self.current_context == KeyContext.CONTENT:
+            self._handle_scroll_up()
+        elif self.current_context in (KeyContext.DIRECTORY, KeyContext.SEARCH):
+            # In directory/search context, scroll up means navigate up
+            self._handle_navigate_up()
+        else:
+            self.status_bar.text = "Scroll up not available in current context"
+    
+    def _handle_scroll_down_context_aware(self, event) -> None:
+        """Handle scroll down action based on current context."""
+        if self.current_context == KeyContext.CONTENT:
+            self._handle_scroll_down()
+        elif self.current_context in (KeyContext.DIRECTORY, KeyContext.SEARCH):
+            # In directory/search context, scroll down means navigate down
+            self._handle_navigate_down()
+        else:
+            self.status_bar.text = "Scroll down not available in current context"
     
     def _update_context(self) -> None:
         """Update the current keybinding context based on application state."""
@@ -363,69 +402,10 @@ class GopherBrowser:
         return KeyContext.BROWSER
     
     def _rebuild_keybindings(self) -> None:
-        """Rebuild keybindings for the current context."""
-        # Clear existing dynamic keybindings (keep session management ones)
-        self.kb = KeyBindings()
-        
-        # Create action mappings
-        action_handlers = {
-            'navigate_up': lambda event: self._handle_navigate_up(),
-            'navigate_down': lambda event: self._handle_navigate_down(),
-            'open_item': lambda event: self.open_selected_item(),
-            'go_back': lambda event: self.go_back(),
-            'go_forward': lambda event: self.go_forward(),
-            'quit': lambda event: event.app.exit(),
-            'refresh': lambda event: self.refresh(),
-            'help': lambda event: self.show_help(),
-            'bookmark_toggle': lambda event: self.toggle_bookmark(),
-            'bookmark_list': lambda event: self.show_bookmarks(),
-            'history_show': lambda event: self.show_history(),
-            'go_to_url': lambda event: self.show_url_input(),
-            'go_home': lambda event: self.navigate_to(DEFAULT_URL),
-            'search_directory': lambda event: self._handle_search(),
-            'search_clear': lambda event: self._handle_search_clear(),
-            'scroll_up': lambda event: self._handle_scroll_up(),
-            'scroll_down': lambda event: self._handle_scroll_down(),
-        }
-        
-        # Get bindings for current context
-        bindings = self.keybinding_manager.get_bindings_by_context(self.current_context)
-        
-        # Add keybindings to prompt_toolkit
-        for action, binding in bindings.items():
-            if action in action_handlers and binding.enabled:
-                handler = action_handlers[action]
-                
-                # Add all keys for this action
-                for key in binding.keys:
-                    # Convert our normalized format to prompt_toolkit format
-                    pt_key = self._convert_key_to_prompt_toolkit(key)
-                    
-                    try:
-                        # Fix closure bug by creating a factory function
-                        def create_handler(h):
-                            @self.kb.add(pt_key)
-                            def _(event):
-                                h(event)
-                            return _
-                        
-                        create_handler(handler)
-                    except ValueError as e:
-                        logger.warning(f"Failed to add keybinding {pt_key} for {action}: {e}")
-                        continue
-        
-        # Add session management keybindings (if available)
-        if self.session_manager:
-            @self.kb.add('s')
-            def _(event):
-                self.show_session_dialog()
-            
-            @self.kb.add('c-s')
-            def _(event):
-                self.save_current_session()
-        
-        # Update the application's key bindings
-        self.app.key_bindings = self.kb
+        """Log context change for now - full rebuild during runtime is complex."""
+        logger.info(f"Context changed to {self.current_context.value} - keybinding context updated")
+        # Note: Full keybinding rebuild during runtime requires more complex approach
+        # For now, we just track the context change and use it in action handlers
     
     def _handle_scroll_up(self) -> None:
         """Handle scroll up action in content context."""
@@ -665,6 +645,10 @@ class GopherBrowser:
         
         # Update display and status
         self.update_display()
+        
+        # Update context to SEARCH
+        self._update_context()
+        
         if matching_items:
             self.status_bar.text = f"Search: '{query}' - {len(matching_items)} results (ESC to clear)"
         else:
@@ -682,6 +666,10 @@ class GopherBrowser:
             
             # Update display
             self.update_display()
+            
+            # Update context to non-search state
+            self._update_context()
+            
             self.status_bar.text = "Search cleared"
     
     def show_help(self):
@@ -1102,6 +1090,9 @@ class GopherBrowser:
             # Initial navigation (only if session wasn't restored)
             if not session_restored:
                 self.navigate_to(self.current_url)
+            
+            # Set up initial context
+            self._update_context()
             
             # Run the application
             self.app.run()
