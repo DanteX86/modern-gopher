@@ -1,4 +1,4 @@
-.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check
+.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check suggestion suggetion
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "  keybindings   - Manage keybindings"
 	@echo "  check         - Run comprehensive checks"
 	@echo "  recommendations - Show development recommendations"
+	@echo "  suggestion      - Get smart suggestions for next steps"
 
 # Install dependencies
 install:
@@ -100,4 +101,55 @@ recommendations:
 	@echo "10. Clean up artifacts: make clean"
 	@echo "11. Full dev setup: make setup"
 	@echo "12. Review docs: docs/KEYBINDINGS.md docs/README.md"
+
+# Smart suggestions based on project state
+suggestion:
+	@echo "=== Smart Project Suggestions ==="
+	@echo "Analyzing current project state..."
+	@echo ""
+	@# Check git status and suggest next steps
+	@if git status --porcelain | grep -q .; then \
+		echo "📝 Uncommitted changes detected:"; \
+		git status --short; \
+		echo "💡 Suggestion: Review and commit changes with 'git add . && git commit -m \"description\"'"; \
+	else \
+		echo "✅ Working directory is clean"; \
+		echo "💡 Suggestion: Good time to start new features or run tests"; \
+	fi
+	@echo ""
+	@# Check test status
+	@echo "🧪 Test recommendations:"
+	@if [ -f .pytest_cache/README.md ]; then \
+		echo "   • Run 'make test-fast' for quick validation"; \
+		echo "   • Run 'make test' for comprehensive testing"; \
+	else \
+		echo "   • Run 'make test' to establish test baseline"; \
+	fi
+	@echo ""
+	@# Check recent activity
+	@echo "📈 Recent development:"
+	@git log --oneline -3 | sed 's/^/   • /'
+	@echo ""
+	@# Context-specific suggestions
+	@echo "🎯 Context-specific suggestions:"
+	@if git branch --show-current | grep -q feature; then \
+		echo "   • You're on a feature branch - consider running 'make check' before merging"; \
+		echo "   • Test your changes with 'make demo'"; \
+		echo "   • Review keybindings with 'make keybindings'"; \
+	elif git branch --show-current | grep -q main\|master; then \
+		echo "   • You're on main branch - good time to start a new feature"; \
+		echo "   • Run 'make check' to verify everything is working"; \
+	else \
+		echo "   • Current branch: $$(git branch --show-current)"; \
+		echo "   • Run 'make check' to verify project health"; \
+	fi
+	@echo ""
+	@echo "🔧 Quick actions:"
+	@echo "   • make demo      - Test the browser"
+	@echo "   • make check     - Run all checks"
+	@echo "   • make test-fast - Quick test validation"
+	@echo "   • git status     - Check repository state"
+
+# Alias for common typo
+suggetion: suggestion
 
