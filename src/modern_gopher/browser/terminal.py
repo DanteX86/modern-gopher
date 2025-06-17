@@ -150,6 +150,7 @@ class GopherBrowser:
         # Initialize keybinding manager
         self.keybinding_manager = KeyBindingManager()
         self.current_context = KeyContext.BROWSER
+        self._last_keybinding_context = None  # Track context changes
         
         # Create UI components
         self.setup_ui()
@@ -254,9 +255,14 @@ class GopherBrowser:
                     
                     # Add all keys for this action
                     try:
-                        @kb.add(pt_key)
-                        def _(event, handler=handler):
-                            handler(event)
+                        # Fix closure bug by creating a factory function
+                        def create_handler(h):
+                            @kb.add(pt_key)
+                            def _(event):
+                                h(event)
+                            return _
+                        
+                        create_handler(handler)
                     except ValueError as e:
                         logger.warning(f"Failed to add keybinding {pt_key} for {action}: {e}")
                         continue
@@ -321,6 +327,117 @@ class GopherBrowser:
         """Handle search clear action."""
         if self.is_searching:
             self.clear_search()
+    
+    def _update_context(self) -> None:
+        """Update the current keybinding context based on application state."""
+        new_context = self._determine_context()
+        
+        if new_context != self.current_context:
+            logger.debug(f"Context switching from {self.current_context} to {new_context}")
+            self.current_context = new_context
+            
+            # Only rebuild keybindings if context actually changed
+            if new_context != self._last_keybinding_context:
+                self._rebuild_keybindings()
+                self._last_keybinding_context = new_context
+    
+    def _determine_context(self) -> KeyContext:
+        """Determine the appropriate context based on current application state."""
+        # Priority order for context determination:
+        
+        # 1. Search context - when actively searching
+        if self.is_searching:
+            return KeyContext.SEARCH
+        
+        # 2. Content context - when viewing text/binary content (no directory items)
+        if not self.current_items and self.content_view.text:
+            # Check if we're viewing actual content (not just preview)
+            if len(self.content_view.text) > 100:  # Arbitrary threshold for "real content"
+                return KeyContext.CONTENT
+        
+        # 3. Directory context - when viewing directory listings
+        if self.current_items:
+            return KeyContext.DIRECTORY
+        
+        # 4. Default to browser context
+        return KeyContext.BROWSER
+    
+    def _rebuild_keybindings(self) -> None:
+        """Rebuild keybindings for the current context."""
+        # Clear existing dynamic keybindings (keep session management ones)
+        self.kb = KeyBindings()
+        
+        # Create action mappings
+        action_handlers = {
+            'navigate_up': lambda event: self._handle_navigate_up(),
+            'navigate_down': lambda event: self._handle_navigate_down(),
+            'open_item': lambda event: self.open_selected_item(),
+            'go_back': lambda event: self.go_back(),
+            'go_forward': lambda event: self.go_forward(),
+            'quit': lambda event: event.app.exit(),
+            'refresh': lambda event: self.refresh(),
+            'help': lambda event: self.show_help(),
+            'bookmark_toggle': lambda event: self.toggle_bookmark(),
+            'bookmark_list': lambda event: self.show_bookmarks(),
+            'history_show': lambda event: self.show_history(),
+            'go_to_url': lambda event: self.show_url_input(),
+            'go_home': lambda event: self.navigate_to(DEFAULT_URL),
+            'search_directory': lambda event: self._handle_search(),
+            'search_clear': lambda event: self._handle_search_clear(),
+            'scroll_up': lambda event: self._handle_scroll_up(),
+            'scroll_down': lambda event: self._handle_scroll_down(),
+        }
+        
+        # Get bindings for current context
+        bindings = self.keybinding_manager.get_bindings_by_context(self.current_context)
+        
+        # Add keybindings to prompt_toolkit
+        for action, binding in bindings.items():
+            if action in action_handlers and binding.enabled:
+                handler = action_handlers[action]
+                
+                # Add all keys for this action
+                for key in binding.keys:
+                    # Convert our normalized format to prompt_toolkit format
+                    pt_key = self._convert_key_to_prompt_toolkit(key)
+                    
+                    try:
+                        # Fix closure bug by creating a factory function
+                        def create_handler(h):
+                            @self.kb.add(pt_key)
+                            def _(event):
+                                h(event)
+                            return _
+                        
+                        create_handler(handler)
+                    except ValueError as e:
+                        logger.warning(f"Failed to add keybinding {pt_key} for {action}: {e}")
+                        continue
+        
+        # Add session management keybindings (if available)
+        if self.session_manager:
+            @self.kb.add('s')
+            def _(event):
+                self.show_session_dialog()
+            
+            @self.kb.add('c-s')
+            def _(event):
+                self.save_current_session()
+        
+        # Update the application's key bindings
+        self.app.key_bindings = self.kb
+    
+    def _handle_scroll_up(self) -> None:
+        """Handle scroll up action in content context."""
+        if hasattr(self.content_view, 'buffer'):
+            # Scroll the content view up
+            self.content_view.buffer.cursor_up(count=5)
+    
+    def _handle_scroll_down(self) -> None:
+        """Handle scroll down action in content context."""
+        if hasattr(self.content_view, 'buffer'):
+            # Scroll the content view down
+            self.content_view.buffer.cursor_down(count=5)
     
     def get_menu_text(self) -> List[Tuple[str, str]]:
         """Get the formatted text for the menu display."""
@@ -768,6 +885,9 @@ class GopherBrowser:
             
             # Update display
             self.update_display()
+            
+            # Update context based on new state
+            self._update_context()
             
         except GopherProtocolError as e:
             self.content_view.text = f"Error: {e}"
