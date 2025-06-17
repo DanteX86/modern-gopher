@@ -1,4 +1,4 @@
-.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check suggestion suggetion
+.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check suggestion suggetion debug debug-syntax debug-style debug-security debug-types debug-all debug-summary
 
 # Default target
 help:
@@ -15,6 +15,14 @@ help:
 	@echo "  check         - Run comprehensive checks"
 	@echo "  recommendations - Show development recommendations"
 	@echo "  suggestion      - Get smart suggestions for next steps"
+	@echo ""
+	@echo "Debug Commands:"
+	@echo "  debug-syntax    - Check Python syntax"
+	@echo "  debug-style     - Check code style/linting (flake8)"
+	@echo "  debug-security  - Check security issues (bandit)"
+	@echo "  debug-types     - Check type annotations (mypy)"
+	@echo "  debug-all       - Run all debug checks"
+	@echo "  debug-summary   - Show debugging command summary"
 
 # Install dependencies
 install:
@@ -73,6 +81,38 @@ keybindings:
 	@echo "Current keybindings:"
 	@python -m modern_gopher.cli keybindings list
 
+# Syntax check
+debug-syntax:
+	@echo "Running syntax check..."
+	@python3 -m py_compile *.py
+
+# Style check
+debug-style:
+	@echo "Running style and lint check (flake8)..."
+	@flake8 .
+
+# Security check
+debug-security:
+	@echo "Running security check (bandit)..."
+	@bandit -r .
+
+# Type check
+debug-types:
+	@echo "Running type check (mypy)..."
+	@mypy .
+
+# Run all debug checks
+debug-all: debug-syntax debug-style debug-security debug-types
+
+# Summary of debugging steps
+debug-summary:
+	@echo "=== Debugging Summary ==="
+	@echo "1. Syntax Check: make debug-syntax"
+	@echo "2. Style/Lint Check: make debug-style"
+	@echo "3. Security Check: make debug-security"
+	@echo "4. Type Check: make debug-types"
+	@echo "Combine All: make debug-all"
+
 # Comprehensive checks
 check:
 	@echo "Running comprehensive checks..."
@@ -85,7 +125,6 @@ check:
 	@echo "4. Checking configuration..."
 	@python -c "from modern_gopher.config import get_config; c=get_config(); print('✅ Configuration loaded successfully')"
 	@echo "All checks passed! ✅"
-
 # Show development recommendations
 recommendations:
 	@echo "=== Development Recommendations ==="

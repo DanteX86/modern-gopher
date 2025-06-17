@@ -1,6 +1,14 @@
 # Modern Gopher
 
+[![CI/CD Pipeline](https://github.com/DanteX86/modern-gopher/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/DanteX86/modern-gopher/actions)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen.svg)](#test-coverage)
+
 A modern, feature-rich terminal-based client for the Gopher protocol built in Python.
+
+> 🎯 **Production Ready**: Modern Gopher is a fully-featured Gopher client suitable for daily use, with comprehensive session management, customizable keybindings, and a beautiful terminal interface.
 
 ## 🎯 Current Status
 
