@@ -280,21 +280,25 @@ def cmd_session(args: argparse.Namespace) -> int:
             
         elif args.session_action == 'show':
             # Show detailed session info
-            session = session_manager.get_session(args.session_id)
+            session_info = session_manager.get_session_info(args.session_id)
             
-            if not session:
+            if not session_info:
                 console.print(f"Session not found: {args.session_id}", style="red")
                 return 1
             
             # Create detailed info panel
-            info_text = f"""Session ID: {session.session_id}
-Name: {session.name or 'Unnamed'}
-Description: {session.description or 'No description'}
-Current URL: {session.current_url or 'N/A'}
-Created: {session.created_datetime}
-Last Used: {session.last_used_datetime}
-Use Count: {session.use_count}
-Tags: {', '.join(session.tags) if session.tags else 'None'}"""
+            info_text = f"""Session ID: {session_info['id']}
+Name: {session_info['name'] or 'Unnamed'}
+Description: {session_info['description'] or 'No description'}
+Current URL: {session_info['current_url'] or 'N/A'}
+Created: {session_info['created_at']}
+Last Used: {session_info['last_used']}
+History Count: {session_info['history_count']}
+Tags: {', '.join(session_info['tags']) if session_info['tags'] else 'None'}
+Searching: {session_info['is_searching']}"""
+            
+            if session_info['is_searching'] and session_info['search_query']:
+                info_text += f"\nSearch Query: {session_info['search_query']}"
             
             console.print(Panel(info_text, title="Session Details"))
             
@@ -320,22 +324,22 @@ Tags: {', '.join(session.tags) if session.tags else 'None'}"""
                 
         elif args.session_action == 'export':
             # Export sessions
-            exported_count = session_manager.export_sessions(args.export_path)
-            if exported_count > 0:
-                console.print(f"Exported {exported_count} sessions to: {args.export_path}", style="green")
+            if session_manager.export_sessions(args.export_path):
+                console.print(f"Sessions exported to: {args.export_path}", style="green")
             else:
-                console.print("No sessions exported", style="yellow")
+                console.print("Failed to export sessions", style="red")
+                return 1
                 
         elif args.session_action == 'import':
             # Import sessions
-            imported_count = session_manager.import_sessions(
+            if session_manager.import_sessions(
                 args.import_path, 
                 merge=not args.replace
-            )
-            if imported_count > 0:
-                console.print(f"Imported {imported_count} sessions from: {args.import_path}", style="green")
+            ):
+                console.print(f"Sessions imported from: {args.import_path}", style="green")
             else:
-                console.print("No sessions imported", style="yellow")
+                console.print("Failed to import sessions", style="red")
+                return 1
         
         return 0
     
