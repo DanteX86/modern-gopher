@@ -1,17 +1,39 @@
 # Modern Gopher
 
-A set of modern tools for interacting with the Gopher protocol (RFC 1436).
+A modern, feature-rich terminal-based client for the Gopher protocol built in Python.
 
-## Features
+## 🎯 Current Status
 
-- Pure Python implementation of the Gopher protocol
-- Terminal-based browser with modern UI features
-- Support for all Gopher item types
-- TLS/SSL support for secure Gopher connections
-- Local content caching
-- Bookmarking system
-- History tracking
-- Export functionality to modern formats
+### ✅ **Completed Features**
+- **Core Protocol Implementation**: Full RFC 1436 compliant Gopher protocol support
+- **URL Parsing**: Complete Gopher URL parsing with SSL/TLS support  
+- **Rich CLI Interface**: Beautiful terminal output using Rich library
+- **Caching System**: Memory and disk caching for improved performance
+- **Multiple Item Types**: Support for all standard Gopher item types
+- **IPv4/IPv6 Support**: Automatic or forced IP version selection
+- **SSL/TLS Support**: Secure Gopher connections (gophers://)
+- **Command-Line Tools**: `get`, `info`, and `browse` commands
+- **Comprehensive Test Suite**: 134 tests covering protocol, client, types, and CLI
+
+### ✅ **Recently Completed**
+- **Directory Search Functionality**: Interactive search within directories (100% complete)
+- **Terminal Browser**: Interactive browser with navigation (100% complete)
+- **Keybinding Fixes**: All keyboard shortcuts working properly
+- **Bookmark Integration**: Full bookmark management in browser
+- **BookmarkManager**: Complete bookmark system with persistence, search, tags, and visit tracking
+- **Enhanced Help System**: Comprehensive keyboard shortcuts and feature documentation
+- **Build System**: Integrated Python build CLI for package distribution
+
+### 🚧 **In Progress**
+- **Configuration System**: User preferences and settings (50% complete)
+- **URL Input Dialog**: Direct URL entry in browser (planned)
+- **Beautiful Soup Integration**: HTML content rendering (planned)
+
+### 📋 **Planned Features**
+- **Plugin Architecture**: Extensible item type handlers
+- **Enhanced Browser**: Advanced UI features like tabs and split-pane viewing
+- **Session Management**: Persistent browser sessions across restarts
+- **Advanced Search**: Full-text content search across multiple resources
 
 ## Installation
 
@@ -63,8 +85,36 @@ source venv/bin/activate
 
 2. Run tests:
 ```bash
-pytest
+# Run unit tests only (fast)
+python run_tests.py
+
+# Run all tests including integration tests (requires network)
+python run_tests.py --all
+
+# Run with coverage reporting
+python run_tests.py --coverage
+
+# Run specific test file
+python run_tests.py --file test_protocol
+
+# Or use pytest directly
+pytest                           # Run unit tests only
+pytest --integration            # Run integration tests only
+pytest -m "not integration"    # Run without integration tests
 ```
+
+### Test Coverage
+
+The project includes comprehensive test coverage with 134 tests:
+
+- **Protocol Tests**: Socket creation, request/response handling, error conditions
+- **Types Tests**: Gopher item types, directory parsing, file type detection  
+- **Client Tests**: Caching, resource fetching, high-level operations
+- **CLI Tests**: Argument parsing, command execution, error handling
+- **Integration Tests**: Real network connections to public Gopher servers
+- **URL Tests**: URL parsing, validation, and construction
+
+Tests are organized into unit tests (fast, no network) and integration tests (require network access).
 
 ## License
 

@@ -181,15 +181,28 @@ def parse_gopher_url(url: str) -> GopherURL:
     selector = ''
     
     if path:
-        # Remove leading slash
-        if path.startswith('/'):
-            path = path[1:]
-            
-        # First character is the item type
-        if path:
-            type_char = path[0]
-            item_type = GopherItemType.from_char(type_char)
-            selector = path[1:]  # Rest is selector
+        # Check if this is just the root path
+        if path == '/':
+            selector = '/'
+        else:
+            # Remove leading slash
+            if path.startswith('/'):
+                path = path[1:]
+                
+            # First character might be the item type
+            if path:
+                type_char = path[0]
+                parsed_item_type = GopherItemType.from_char(type_char)
+                if parsed_item_type is not None:
+                    # Valid item type found
+                    item_type = parsed_item_type
+                    selector = path[1:]  # Rest is selector
+                else:
+                    # Not a valid item type, treat whole path as selector
+                    selector = path
+            else:
+                # Empty path after removing slash - this is root
+                selector = '/'
     
     # Handle query string
     query = parsed.query

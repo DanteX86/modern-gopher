@@ -19,6 +19,8 @@ try:
     from prompt_toolkit.widgets import Frame, TextArea, Label
     from prompt_toolkit.formatted_text import HTML
     from prompt_toolkit.filters import has_focus
+    from prompt_toolkit.shortcuts import input_dialog
+    from prompt_toolkit.validation import Validator, ValidationError
 except ImportError:
     print("Error: The 'prompt_toolkit' package is required. Please install it with 'pip install prompt_toolkit'.")
     sys.exit(1)
@@ -27,6 +29,8 @@ from modern_gopher.core.client import GopherClient
 from modern_gopher.core.types import GopherItem, GopherItemType
 from modern_gopher.core.url import GopherURL, parse_gopher_url
 from modern_gopher.core.protocol import GopherProtocolError
+from modern_gopher.browser.bookmarks import BookmarkManager
+from modern_gopher.config import get_config, ModernGopherConfig
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -83,7 +87,7 @@ class GopherBrowser:
     
     def __init__(self, initial_url: str = DEFAULT_URL, timeout: int = 30, 
                  use_ssl: bool = False, use_ipv6: Optional[bool] = None,
-                 cache_dir: Optional[str] = None):
+                 cache_dir: Optional[str] = None, config: Optional[ModernGopherConfig] = None):
         """
         Initialize the browser.
         
@@ -93,7 +97,17 @@ class GopherBrowser:
             use_ssl: Whether to use SSL
             use_ipv6: IPv6 preference (None for auto)
             cache_dir: Directory for caching
+            config: Configuration object (loads default if None)
         """
+        # Load configuration
+        self.config = config or get_config()
+        
+        # Apply configuration defaults for parameters not explicitly provided
+        if initial_url == DEFAULT_URL and self.config.initial_url:
+            initial_url = self.config.initial_url
+        if cache_dir is None and self.config.cache_enabled:
+            cache_dir = self.config.cache_directory
+        
         # Create client
         self.client = GopherClient(
             timeout=timeout, 
@@ -104,9 +118,15 @@ class GopherBrowser:
         # State
         self.current_url = initial_url
         self.current_items: List[GopherItem] = []
+        self.filtered_items: List[GopherItem] = []  # For search filtering
+        self.search_query = ""  # Current search query
+        self.is_searching = False  # Whether we're in search mode
         self.selected_index = 0
-        self.history = HistoryManager()
+        self.history = HistoryManager(max_size=self.config.max_history_items)
         self.use_ssl = use_ssl
+        
+        # Initialize bookmark manager with config path
+        self.bookmarks = BookmarkManager(self.config.bookmarks_file)
         
         # Create UI components
         self.setup_ui()
@@ -200,15 +220,67 @@ class GopherBrowser:
         def _(event):
             self.go_back()
         
-        @kb.add('right', 'escape')
+        @kb.add('right')
         def _(event):
             self.go_forward()
         
         # Quit
+        @kb.add('q')
         @kb.add('c-c')
-        @kb.add('c-q')
         def _(event):
             event.app.exit()
+        
+        # Refresh
+        @kb.add('r')
+        @kb.add('f5')
+        def _(event):
+            self.refresh()
+        
+        # Help
+        @kb.add('h')
+        @kb.add('f1')
+        def _(event):
+            self.show_help()
+        
+        # Bookmark management
+        @kb.add('b')
+        @kb.add('c-b')
+        def _(event):
+            self.toggle_bookmark()
+        
+        @kb.add('m')
+        def _(event):
+            self.show_bookmarks()
+        
+        # History
+        @kb.add('c-h')
+        def _(event):
+            self.show_history()
+        
+        # Go to URL (open URL input dialog)
+        @kb.add('g')
+        @kb.add('c-l')
+        def _(event):
+            self.show_url_input()
+        
+        # Home - go to default URL
+        @kb.add('home')
+        def _(event):
+            self.navigate_to(DEFAULT_URL)
+        
+        # Directory search
+        @kb.add('/')
+        @kb.add('c-f')
+        def _(event):
+            self.show_search_dialog()
+        
+        # Clear search / Exit search mode
+        @kb.add('escape')
+        def _(event):
+            if self.is_searching:
+                self.clear_search()
+            # Note: We don't handle other dialogs here since we're using input_dialog
+            # which handles its own escape key behavior
     
     def get_menu_text(self) -> List[Tuple[str, str]]:
         """Get the formatted text for the menu display."""
@@ -293,38 +365,202 @@ class GopherBrowser:
     
     def show_history(self):
         """Show the browsing history."""
-        history = self.history.get_history()
-        if not history:
+        if not self.history.history:
             self.status_bar.text = "No browsing history"
             return
             
         # Create history text
         text = "Browsing History:\n\n"
-        for i, url in enumerate(history):
+        for i, url in enumerate(self.history.history):
             current = " (current)" if i == self.history.position else ""
             text += f"{i+1}. {url}{current}\n"
         
         # Update content view with history
         self.content_view.text = text
     
+    def show_bookmarks(self):
+        """Show the bookmarks list."""
+        bookmarks = self.bookmarks.get_all()
+        if not bookmarks:
+            self.status_bar.text = "No bookmarks saved"
+            return
+            
+        # Create bookmarks text
+        text = "Bookmarks:\n\n"
+        for i, bookmark in enumerate(bookmarks):
+            text += f"{i+1}. {bookmark.title}\n"
+            text += f"    URL: {bookmark.url}\n"
+            if bookmark.description:
+                text += f"    Description: {bookmark.description}\n"
+            if bookmark.tags:
+                text += f"    Tags: {', '.join(bookmark.tags)}\n"
+            text += "\n"
+        
+        # Update content view with bookmarks
+        self.content_view.text = text
+    
+    def show_url_input(self):
+        """Show URL input dialog for direct URL navigation."""
+        try:
+            # Show input dialog with current URL as default
+            result = input_dialog(
+                title='Go to URL',
+                text='Enter a Gopher URL:',
+                default=self.current_url or 'gopher://',
+                validator=self._url_validator()
+            ).run()
+            
+            # If user provided a URL, navigate to it
+            if result and result.strip():
+                url = result.strip()
+                
+                # Add gopher:// prefix if not present
+                if not url.startswith(('gopher://', 'gophers://')):
+                    url = 'gopher://' + url
+                
+                self.navigate_to(url)
+                self.status_bar.text = f"Navigating to: {url}"
+            else:
+                self.status_bar.text = "URL input cancelled"
+                
+        except Exception as e:
+            self.status_bar.text = f"Error with URL input: {e}"
+            logger.exception(f"URL input error: {e}")
+    
+    def _url_validator(self):
+        """Get a URL validator instance."""
+        
+        class GopherURLValidator(Validator):
+            def validate(self, document):
+                text = document.text.strip()
+                
+                # Allow empty text (will be cancelled)
+                if not text:
+                    return
+                
+                # Add gopher:// prefix if not present for validation
+                if not text.startswith(('gopher://', 'gophers://')):
+                    text = 'gopher://' + text
+                
+                # Try to parse the URL
+                try:
+                    parse_gopher_url(text)
+                except Exception as e:
+                    raise ValidationError(
+                        message=f"Invalid Gopher URL: {str(e)}",
+                        cursor_position=len(document.text)
+                    )
+        
+        return GopherURLValidator()
+    
+    def format_display_string(self, text: str, max_length: int = 100) -> str:
+        """Format a display string, truncating if necessary."""
+        if len(text) <= max_length:
+            return text
+        return text[:max_length] + "..."
+    
+    def show_search_dialog(self):
+        """Show directory search dialog."""
+        if not self.current_items:
+            self.status_bar.text = "No directory to search"
+            return
+        
+        try:
+            # Use input_dialog to get search query
+            search_query = input_dialog(
+                title="Search Directory",
+                text="Enter search term (case-insensitive):",
+                validator=None  # No validation needed for search
+            )
+            
+            if search_query:
+                self.perform_search(search_query)
+            
+        except Exception as e:
+            logger.error(f"Error in search dialog: {e}")
+            self.status_bar.text = "Error opening search dialog"
+    
+    def perform_search(self, query: str):
+        """Perform search on current directory items."""
+        if not query.strip():
+            self.clear_search()
+            return
+        
+        # Store original items if not already searching
+        if not self.is_searching:
+            self.filtered_items = self.current_items.copy()
+        
+        # Filter items based on search query (case-insensitive)
+        query_lower = query.lower()
+        matching_items = []
+        
+        for item in self.filtered_items:
+            # Search in display string and selector
+            if (query_lower in item.display_string.lower() or 
+                query_lower in item.selector.lower()):
+                matching_items.append(item)
+        
+        # Update current items to show search results
+        self.current_items = matching_items
+        self.search_query = query
+        self.is_searching = True
+        self.selected_index = 0
+        
+        # Update display and status
+        self.update_display()
+        if matching_items:
+            self.status_bar.text = f"Search: '{query}' - {len(matching_items)} results (ESC to clear)"
+        else:
+            self.status_bar.text = f"Search: '{query}' - No results found (ESC to clear)"
+    
+    def clear_search(self):
+        """Clear search and restore original directory listing."""
+        if self.is_searching:
+            # Restore original items
+            self.current_items = self.filtered_items.copy()
+            self.filtered_items = []
+            self.search_query = ""
+            self.is_searching = False
+            self.selected_index = 0
+            
+            # Update display
+            self.update_display()
+            self.status_bar.text = "Search cleared"
+    
     def show_help(self):
         """Show the help dialog."""
-        # Set the help text in the dialog
-        # Dialog is created in setup_ui
-        # We would display it in a float, but for now we'll just show in the content area
-        help_text = "Keyboard Navigation:\n"
-        help_text += "  ↑/↓: Navigate directory list\n"
-        help_text += "  Enter: Open selected item\n"
-        help_text += "  Backspace/Alt+Left: Go back\n"
-        help_text += "  Alt+Right: Go forward\n"
-        help_text += "  Ctrl+B: Toggle bookmark\n"
-        help_text += "  Ctrl+H: Show history\n"
-        help_text += "  Ctrl+Q: Quit\n"
-        help_text += "  F1: Help\n\n"
-        help_text += "You can also use the mouse to click on items and buttons.\n\n"
-        help_text += "Press Escape or any key to close this help screen."
+        help_text = "Modern Gopher Terminal Browser Help\n"
+        help_text += "═══════════════════════════════════\n\n"
+        help_text += "Navigation:\n"
+        help_text += "  ↑/↓ Arrow Keys    Navigate directory list\n"
+        help_text += "  Enter             Open selected item\n"
+        help_text += "  Backspace         Go back in history\n"
+        help_text += "  →/← Arrow Keys    Forward/back in history\n"
+        help_text += "  Home              Go to default URL\n"
+        help_text += "  R / F5            Refresh current page\n\n"
+        help_text += "Bookmarks:\n"
+        help_text += "  B / Ctrl+B        Toggle bookmark for current URL\n"
+        help_text += "  M                 Show bookmarks list\n\n"
+        help_text += "Search & Navigation:\n"
+        help_text += "  / / Ctrl+F        Search current directory\n"
+        help_text += "  ESC               Clear search (when searching)\n"
+        help_text += "  Ctrl+H            Show browsing history\n"
+        help_text += "  G / Ctrl+L        Go to URL (feature planned)\n\n"
+        help_text += "General:\n"
+        help_text += "  H / F1            Show this help\n"
+        help_text += "  Q / Ctrl+C        Quit browser\n\n"
+        help_text += "Mouse Support:\n"
+        help_text += "  Click on items to select them\n"
+        help_text += "  Double-click to open items\n\n"
+        help_text += "Features:\n"
+        help_text += "  • Automatic bookmark management\n"
+        help_text += "  • Browsing history tracking\n"
+        help_text += "  • Content caching for performance\n"
+        help_text += "  • Support for all Gopher item types\n"
+        help_text += "  • SSL/TLS support (gophers://)\n\n"
+        help_text += "Press any key to return to browsing."
         
-        # Show in content view for simplicity
+        # Show in content view
         self.content_view.text = help_text
     
     def close_dialog(self):
@@ -338,22 +574,46 @@ class GopherBrowser:
     
     def get_item_icon(self, item_type: GopherItemType) -> str:
         """Get an icon representing the item type."""
-        if item_type == GopherItemType.DIRECTORY:
-            return "📁"
-        elif item_type == GopherItemType.TEXT_FILE:
-            return "📄"
-        elif item_type == GopherItemType.BINARY_FILE or item_type == GopherItemType.DOS_BINARY:
-            return "📦"
-        elif item_type == GopherItemType.GIF_IMAGE or item_type == GopherItemType.IMAGE_FILE:
-            return "🖼️"
-        elif item_type == GopherItemType.SEARCH_SERVER:
-            return "🔍"
-        elif item_type == GopherItemType.HTML:
-            return "🌐"
-        elif item_type == GopherItemType.SOUND_FILE:
-            return "🔊"
+        # Use Unicode icons with fallback to text
+        try:
+            if item_type == GopherItemType.DIRECTORY:
+                return "📁"
+            elif item_type == GopherItemType.TEXT_FILE:
+                return "📄"
+            elif item_type in (GopherItemType.BINARY_FILE, GopherItemType.DOS_BINARY):
+                return "📎"
+            elif item_type in (GopherItemType.GIF_IMAGE, GopherItemType.IMAGE_FILE):
+                return "🖼️"
+            elif item_type == GopherItemType.SEARCH_SERVER:
+                return "🔍"
+            elif item_type == GopherItemType.HTML:
+                return "🌐"
+            elif item_type == GopherItemType.SOUND_FILE:
+                return "🔊"
+            else:
+                return "❓"
+        except:
+            # Fallback to text representations if Unicode fails
+            icon_map = {
+                GopherItemType.DIRECTORY: "[DIR]",
+                GopherItemType.TEXT_FILE: "[TXT]", 
+                GopherItemType.BINARY_FILE: "[BIN]",
+                GopherItemType.DOS_BINARY: "[BIN]",
+                GopherItemType.GIF_IMAGE: "[IMG]",
+                GopherItemType.IMAGE_FILE: "[IMG]",
+                GopherItemType.SEARCH_SERVER: "[?]",
+                GopherItemType.HTML: "[HTM]",
+                GopherItemType.SOUND_FILE: "[SND]",
+            }
+            return icon_map.get(item_type, "[?]")
+    
+    def update_status(self, message: str) -> None:
+        """Update the status bar with a custom message."""
+        if self.current_items and len(self.current_items) > 0:
+            position_info = f" ({self.selected_index + 1}/{len(self.current_items)})"
+            self.status_bar.text = f"{message}{position_info}"
         else:
-            return "❓"
+            self.status_bar.text = message
     
     def update_status_bar(self) -> None:
         """Update the status bar with current URL and navigation help."""
@@ -439,6 +699,15 @@ class GopherBrowser:
         url = self.history.forward()
         if url:
             self.navigate_to(url)
+    
+    def refresh(self) -> None:
+        """Refresh the current page."""
+        if self.current_url:
+            # Clear cache for current URL and reload
+            cache_key = self.client._cache_key(self.current_url)
+            if cache_key in self.client.memory_cache:
+                del self.client.memory_cache[cache_key]
+            self.navigate_to(self.current_url)
     
     def run(self) -> int:
         """Run the browser application."""
