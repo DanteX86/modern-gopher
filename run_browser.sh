@@ -1,8 +1,6 @@
 #!/bin/bash
-"""
-Convenience script to run the Modern Gopher terminal browser.
-This script activates the virtual environment and launches the browser.
-"""
+# Convenience script to run the Modern Gopher terminal browser.
+# This script activates the virtual environment and launches the browser.
 
 cd "$(dirname "$0")"
 
