@@ -13,21 +13,19 @@ A modern, feature-rich terminal-based client for the Gopher protocol built in Py
 - **IPv4/IPv6 Support**: Automatic or forced IP version selection
 - **SSL/TLS Support**: Secure Gopher connections (gophers://)
 - **Command-Line Tools**: `get`, `info`, and `browse` commands
-- **Comprehensive Test Suite**: 134 tests covering protocol, client, types, and CLI
+- **Comprehensive Test Suite**: 224 tests covering protocol, client, types, CLI, HTML rendering, and browser functionality
 
 ### ✅ **Recently Completed**
+- **Beautiful Soup HTML Rendering**: Full HTML content rendering with Beautiful Soup integration (100% complete)
 - **Directory Search Functionality**: Interactive search within directories (100% complete)
 - **Terminal Browser**: Interactive browser with navigation (100% complete)
+- **Configuration System**: User preferences and settings (100% complete)
+- **URL Input Dialog**: Direct URL entry in browser (100% complete)
 - **Keybinding Fixes**: All keyboard shortcuts working properly
 - **Bookmark Integration**: Full bookmark management in browser
 - **BookmarkManager**: Complete bookmark system with persistence, search, tags, and visit tracking
 - **Enhanced Help System**: Comprehensive keyboard shortcuts and feature documentation
 - **Build System**: Integrated Python build CLI for package distribution
-
-### 🚧 **In Progress**
-- **Configuration System**: User preferences and settings (50% complete)
-- **URL Input Dialog**: Direct URL entry in browser (planned)
-- **Beautiful Soup Integration**: HTML content rendering (planned)
 
 ### 📋 **Planned Features**
 - **Plugin Architecture**: Extensible item type handlers
@@ -105,12 +103,16 @@ pytest -m "not integration"    # Run without integration tests
 
 ### Test Coverage
 
-The project includes comprehensive test coverage with 134 tests:
+The project includes comprehensive test coverage with 224 tests:
 
 - **Protocol Tests**: Socket creation, request/response handling, error conditions
 - **Types Tests**: Gopher item types, directory parsing, file type detection  
 - **Client Tests**: Caching, resource fetching, high-level operations
 - **CLI Tests**: Argument parsing, command execution, error handling
+- **Browser Tests**: Terminal browser functionality, history, bookmarks, search
+- **HTML Renderer Tests**: Beautiful Soup integration, HTML parsing and rendering
+- **Configuration Tests**: User preferences, settings persistence
+- **Keybinding Tests**: Keyboard shortcuts, validation, conflict detection
 - **Integration Tests**: Real network connections to public Gopher servers
 - **URL Tests**: URL parsing, validation, and construction
 

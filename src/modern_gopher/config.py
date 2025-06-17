@@ -38,6 +38,13 @@ DEFAULT_CONFIG = {
         'max_history_items': 1000,
         'save_session': True,
     },
+    'session': {
+        'enabled': True,
+        'auto_restore': True,
+        'session_file': '~/.config/modern-gopher/session.json',
+        'backup_sessions': True,
+        'max_sessions': 10,
+    },
     'ui': {
         'show_icons': True,
         'status_bar_help': True,
@@ -89,6 +96,13 @@ class ModernGopherConfig:
     max_history_items: int = 1000
     save_session: bool = True
     
+    # Session settings
+    session_enabled: bool = True
+    session_auto_restore: bool = True
+    session_file: str = '~/.config/modern-gopher/session.json'
+    session_backup_sessions: bool = True
+    session_max_sessions: int = 10
+    
     # UI settings
     show_icons: bool = True
     status_bar_help: bool = True
@@ -105,6 +119,7 @@ class ModernGopherConfig:
         self.cache_directory = os.path.expanduser(self.cache_directory)
         self.bookmarks_file = os.path.expanduser(self.bookmarks_file)
         self.history_file = os.path.expanduser(self.history_file)
+        self.session_file = os.path.expanduser(self.session_file)
         if self.log_file:
             self.log_file = os.path.expanduser(self.log_file)
     
@@ -155,6 +170,13 @@ class ModernGopherConfig:
                 'max_history_items': self.max_history_items,
                 'save_session': self.save_session,
             },
+            'session': {
+                'enabled': self.session_enabled,
+                'auto_restore': self.session_auto_restore,
+                'session_file': self.session_file,
+                'backup_sessions': self.session_backup_sessions,
+                'max_sessions': self.session_max_sessions,
+            },
             'ui': {
                 'show_icons': self.show_icons,
                 'status_bar_help': self.status_bar_help,
@@ -176,6 +198,7 @@ class ModernGopherConfig:
         gopher = config_dict.get('gopher', {})
         cache = config_dict.get('cache', {})
         browser = config_dict.get('browser', {})
+        session = config_dict.get('session', {})
         ui = config_dict.get('ui', {})
         logging_config = config_dict.get('logging', {})
         
@@ -199,6 +222,13 @@ class ModernGopherConfig:
             history_file=browser.get('history_file', DEFAULT_CONFIG['browser']['history_file']),
             max_history_items=browser.get('max_history_items', DEFAULT_CONFIG['browser']['max_history_items']),
             save_session=browser.get('save_session', DEFAULT_CONFIG['browser']['save_session']),
+            
+            # Session settings
+            session_enabled=session.get('enabled', DEFAULT_CONFIG['session']['enabled']),
+            session_auto_restore=session.get('auto_restore', DEFAULT_CONFIG['session']['auto_restore']),
+            session_file=session.get('session_file', DEFAULT_CONFIG['session']['session_file']),
+            session_backup_sessions=session.get('backup_sessions', DEFAULT_CONFIG['session']['backup_sessions']),
+            session_max_sessions=session.get('max_sessions', DEFAULT_CONFIG['session']['max_sessions']),
             
             # UI settings
             show_icons=ui.get('show_icons', DEFAULT_CONFIG['ui']['show_icons']),
@@ -470,6 +500,20 @@ class ModernGopherConfig:
                         self.save_session = value
                     else:
                         logger.error(f"Unknown browser key: {key}")
+                        return False
+                elif section == 'session':
+                    if key == 'enabled':
+                        self.session_enabled = value
+                    elif key == 'auto_restore':
+                        self.session_auto_restore = value
+                    elif key == 'session_file':
+                        self.session_file = os.path.expanduser(str(value))
+                    elif key == 'backup_sessions':
+                        self.session_backup_sessions = value
+                    elif key == 'max_sessions':
+                        self.session_max_sessions = value
+                    else:
+                        logger.error(f"Unknown session key: {key}")
                         return False
                 elif section == 'ui':
                     if key == 'show_icons':

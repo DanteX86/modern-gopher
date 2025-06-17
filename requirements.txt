@@ -8,4 +8,5 @@ pylint>=2.13.0
 black>=22.0.0
 urwid>=2.1.0
 PyYAML>=6.0
+beautifulsoup4>=4.11.0
 

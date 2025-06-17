@@ -30,6 +30,8 @@ from modern_gopher.core.types import GopherItem, GopherItemType
 from modern_gopher.core.url import parse_gopher_url, GopherURL
 from modern_gopher.core.protocol import GopherProtocolError, DEFAULT_GOPHER_PORT
 from modern_gopher.config import get_config, ModernGopherConfig
+from modern_gopher.browser.sessions import SessionManager
+from modern_gopher.keybindings import KeyBindingManager, KeyContext
 
 # Will be implemented later
 from modern_gopher.browser.terminal import launch_browser
@@ -117,6 +119,231 @@ def display_gopher_items(items: List[GopherItem]) -> None:
         )
     
     console.print(table)
+
+
+def cmd_keybindings_list(args: argparse.Namespace) -> int:
+    """
+    List all current keybindings.
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    try:
+        # Load keybinding manager
+        manager = KeyBindingManager()
+        
+        # Get all categories
+        categories = sorted(manager.get_all_categories())
+        
+        # Create a table for keybindings
+        table = Table(title="Current Keybindings")
+        table.add_column("Category", style="cyan")
+        table.add_column("Action", style="blue")
+        table.add_column("Keys", style="green")
+        table.add_column("Description", style="white")
+        table.add_column("Context", style="yellow")
+        table.add_column("Enabled", style="magenta")
+        
+        for category in categories:
+            bindings = manager.get_bindings_by_category(category)
+            
+            for action, binding in bindings.items():
+                # Format keys nicely
+                key_display = " / ".join(binding.keys)
+                enabled_display = "✅" if binding.enabled else "❌"
+                
+                table.add_row(
+                    category,
+                    action,
+                    key_display,
+                    binding.description,
+                    binding.context.value,
+                    enabled_display
+                )
+        
+        console.print(table)
+        
+        # Show config file location
+        config_path = manager.get_default_config_path()
+        console.print(f"\nKeybindings file: {config_path}")
+        if config_path.exists():
+            console.print("✅ File exists", style="green")
+        else:
+            console.print("❌ File does not exist (using defaults)", style="yellow")
+        
+        console.print("\n[dim]To customize keybindings, edit the file above or use the browser's help (H key)[/dim]")
+        
+        return 0
+    
+    except Exception as e:
+        console.print(f"Keybindings error: {e}", style="bold red")
+        if hasattr(args, 'verbose') and args.verbose:
+            console.print_exception()
+        return 1
+
+
+def cmd_keybindings_reset(args: argparse.Namespace) -> int:
+    """
+    Reset keybindings to defaults.
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    try:
+        # Load keybinding manager
+        manager = KeyBindingManager()
+        
+        # Backup current keybindings
+        backup_path = manager.backup_keybindings()
+        if backup_path:
+            console.print(f"Current keybindings backed up to: {backup_path}", style="dim")
+        
+        # Reset to defaults
+        manager.reset_to_defaults()
+        
+        # Save the defaults
+        if manager.save_to_file():
+            console.print("Keybindings reset to defaults ✅", style="green")
+            console.print(f"Configuration saved to: {manager.config_file}")
+        else:
+            console.print("Failed to save default keybindings", style="red")
+            return 1
+        
+        # Show summary
+        total_bindings = len(manager.bindings)
+        enabled_bindings = sum(1 for binding in manager.bindings.values() if binding.enabled)
+        console.print(f"\nTotal keybindings: {total_bindings}")
+        console.print(f"Enabled keybindings: {enabled_bindings}")
+        
+        return 0
+    
+    except Exception as e:
+        console.print(f"Keybindings reset error: {e}", style="bold red")
+        if hasattr(args, 'verbose') and args.verbose:
+            console.print_exception()
+        return 1
+
+
+def cmd_session(args: argparse.Namespace) -> int:
+    """
+    Manage browser sessions.
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    try:
+        # Load configuration
+        config = get_config(args.config_file if hasattr(args, 'config_file') else None)
+        
+        # Initialize session manager
+        session_manager = SessionManager(
+            session_file=config.session_file,
+            backup_sessions=getattr(config, 'session_backup_sessions', 5),
+            max_sessions=getattr(config, 'session_max_sessions', 10)
+        )
+        
+        if args.session_action == 'list':
+            # List all sessions
+            sessions = session_manager.list_sessions()
+            
+            if not sessions:
+                console.print("No saved sessions found", style="yellow")
+                return 0
+            
+            table = Table(title="Saved Browser Sessions")
+            table.add_column("ID", style="cyan")
+            table.add_column("Name", style="blue")
+            table.add_column("URL", style="green")
+            table.add_column("Created", style="yellow")
+            table.add_column("Last Used", style="magenta")
+            
+            for session in sessions:
+                table.add_row(
+                    session.session_id[:8],  # Show first 8 chars of ID
+                    session.name or "Unnamed",
+                    session.current_url or "N/A",
+                    session.created_datetime.strftime("%Y-%m-%d %H:%M"),
+                    session.last_used_datetime.strftime("%Y-%m-%d %H:%M")
+                )
+            
+            console.print(table)
+            console.print(f"\nTotal sessions: {len(sessions)}")
+            
+        elif args.session_action == 'show':
+            # Show detailed session info
+            session = session_manager.get_session(args.session_id)
+            
+            if not session:
+                console.print(f"Session not found: {args.session_id}", style="red")
+                return 1
+            
+            # Create detailed info panel
+            info_text = f"""Session ID: {session.session_id}
+Name: {session.name or 'Unnamed'}
+Description: {session.description or 'No description'}
+Current URL: {session.current_url or 'N/A'}
+Created: {session.created_datetime}
+Last Used: {session.last_used_datetime}
+Use Count: {session.use_count}
+Tags: {', '.join(session.tags) if session.tags else 'None'}"""
+            
+            console.print(Panel(info_text, title="Session Details"))
+            
+        elif args.session_action == 'load':
+            # This would typically be handled by the browser
+            console.print("Use 'modern-gopher browse' with session loading to load a session", style="yellow")
+            
+        elif args.session_action == 'delete':
+            # Delete session
+            if session_manager.delete_session(args.session_id):
+                console.print(f"Session deleted: {args.session_id}", style="green")
+            else:
+                console.print(f"Failed to delete session: {args.session_id}", style="red")
+                return 1
+                
+        elif args.session_action == 'rename':
+            # Rename session
+            if session_manager.rename_session(args.session_id, args.new_name):
+                console.print(f"Session renamed: {args.session_id} -> {args.new_name}", style="green")
+            else:
+                console.print(f"Failed to rename session: {args.session_id}", style="red")
+                return 1
+                
+        elif args.session_action == 'export':
+            # Export sessions
+            exported_count = session_manager.export_sessions(args.export_path)
+            if exported_count > 0:
+                console.print(f"Exported {exported_count} sessions to: {args.export_path}", style="green")
+            else:
+                console.print("No sessions exported", style="yellow")
+                
+        elif args.session_action == 'import':
+            # Import sessions
+            imported_count = session_manager.import_sessions(
+                args.import_path, 
+                merge=not args.replace
+            )
+            if imported_count > 0:
+                console.print(f"Imported {imported_count} sessions from: {args.import_path}", style="green")
+            else:
+                console.print("No sessions imported", style="yellow")
+        
+        return 0
+    
+    except Exception as e:
+        console.print(f"Session management error: {e}", style="bold red")
+        if hasattr(args, 'verbose') and args.verbose:
+            console.print_exception()
+        return 1
 
 
 def cmd_config(args: argparse.Namespace) -> int:
@@ -548,12 +775,159 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
     )
     info_parser.set_defaults(func=cmd_info)
     
+    # Session command with subcommands
+    session_parser = subparsers.add_parser(
+        "session",
+        help="Manage browser sessions"
+    )
+    
+    # Session subcommands
+    session_subparsers = session_parser.add_subparsers(
+        dest="session_action",
+        help="Session action to perform",
+        required=True
+    )
+    
+    # List sessions command
+    list_sessions_parser = session_subparsers.add_parser(
+        "list",
+        help="List all saved sessions"
+    )
+    
+    # Show session command
+    show_session_parser = session_subparsers.add_parser(
+        "show",
+        help="Show detailed information about a session"
+    )
+    show_session_parser.add_argument(
+        "session_id",
+        help="Session ID to show"
+    )
+    
+    # Load session command
+    load_session_parser = session_subparsers.add_parser(
+        "load",
+        help="Load a saved session"
+    )
+    load_session_parser.add_argument(
+        "session_id",
+        help="Session ID to load"
+    )
+    
+    # Delete session command
+    delete_session_parser = session_subparsers.add_parser(
+        "delete",
+        help="Delete a saved session"
+    )
+    delete_session_parser.add_argument(
+        "session_id",
+        help="Session ID to delete"
+    )
+    
+    # Rename session command
+    rename_session_parser = session_subparsers.add_parser(
+        "rename",
+        help="Rename a saved session"
+    )
+    rename_session_parser.add_argument(
+        "session_id",
+        help="Session ID to rename"
+    )
+    rename_session_parser.add_argument(
+        "new_name",
+        help="New name for the session"
+    )
+    
+    # Export sessions command
+    export_sessions_parser = session_subparsers.add_parser(
+        "export",
+        help="Export sessions to a file"
+    )
+    export_sessions_parser.add_argument(
+        "export_path",
+        help="Path to export sessions to"
+    )
+    
+    # Import sessions command
+    import_sessions_parser = session_subparsers.add_parser(
+        "import",
+        help="Import sessions from a file"
+    )
+    import_sessions_parser.add_argument(
+        "import_path",
+        help="Path to import sessions from"
+    )
+    import_sessions_parser.add_argument(
+        "--merge",
+        action="store_true",
+        default=True,
+        help="Merge with existing sessions (default: True)"
+    )
+    import_sessions_parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="Replace existing sessions"
+    )
+    
+    # Common session arguments
+    for subparser in [list_sessions_parser, show_session_parser, load_session_parser,
+                     delete_session_parser, rename_session_parser, export_sessions_parser, 
+                     import_sessions_parser]:
+        subparser.add_argument(
+            "--config-file",
+            help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+        )
+        subparser.add_argument(
+            "-v", "--verbose", 
+            action="store_true",
+            help="Enable verbose output"
+        )
+    
+    session_parser.set_defaults(func=cmd_session)
+    
     # Config command with subcommands
     config_parser = subparsers.add_parser(
         "config",
         help="Manage configuration settings"
     )
     
+    # Keybindings command with subcommands
+    keybindings_parser = subparsers.add_parser(
+        "keybindings",
+        help="Manage keybindings"
+    )
+    
+    # Keybindings subcommands
+    keybindings_subparsers = keybindings_parser.add_subparsers(
+        dest="keybinding_action",
+        help="Keybinding action to perform",
+        required=True
+    )
+    
+    # List keybindings command
+    list_keybindings_parser = keybindings_subparsers.add_parser(
+        "list",
+        help="List all current keybindings"
+    )
+
+    # Reset keybindings command
+    reset_keybindings_parser = keybindings_subparsers.add_parser(
+        "reset",
+        help="Reset keybindings to defaults"
+    )
+
+    list_keybindings_parser.add_argument(
+        "--config-file",
+        help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+    )
+    reset_keybindings_parser.add_argument(
+        "--config-file",
+        help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+    )
+    
+    list_keybindings_parser.set_defaults(func=cmd_keybindings_list)
+    reset_keybindings_parser.set_defaults(func=cmd_keybindings_reset)
+
     # Config subcommands
     config_subparsers = config_parser.add_subparsers(
         dest="config_action",

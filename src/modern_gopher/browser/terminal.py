@@ -10,6 +10,7 @@ import sys
 import logging
 from typing import List, Dict, Optional, Any, Tuple
 from urllib.parse import urljoin
+from datetime import datetime
 
 try:
     from prompt_toolkit import Application
@@ -30,7 +31,10 @@ from modern_gopher.core.types import GopherItem, GopherItemType
 from modern_gopher.core.url import GopherURL, parse_gopher_url
 from modern_gopher.core.protocol import GopherProtocolError
 from modern_gopher.browser.bookmarks import BookmarkManager
-from modern_gopher.config import get_config, ModernGopherConfig
+from modern_gopher.browser.sessions import SessionManager
+from modern_gopher.config import ModernGopherConfig, get_config
+from modern_gopher.content.html_renderer import render_html_to_text
+from modern_gopher.keybindings import KeyBindingManager, KeyContext
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -124,9 +128,28 @@ class GopherBrowser:
         self.selected_index = 0
         self.history = HistoryManager(max_size=self.config.max_history_items)
         self.use_ssl = use_ssl
+        self.extracted_html_links: List[Dict[str, str]] = []  # Links extracted from HTML content
         
         # Initialize bookmark manager with config path
         self.bookmarks = BookmarkManager(self.config.bookmarks_file)
+        
+        # Initialize session manager if enabled
+        self.session_manager = None
+        if getattr(self.config, 'session_enabled', False):
+            try:
+                self.session_manager = SessionManager(
+                    session_file=self.config.session_file,
+                    backup_sessions=getattr(self.config, 'session_backup_sessions', 5),
+                    max_sessions=getattr(self.config, 'session_max_sessions', 10)
+                )
+            except (AttributeError, TypeError) as e:
+                # Handle case where config attributes are mocks or invalid in tests
+                logger.debug(f"Session manager initialization skipped: {e}")
+                self.session_manager = None
+        
+        # Initialize keybinding manager
+        self.keybinding_manager = KeyBindingManager()
+        self.current_context = KeyContext.BROWSER
         
         # Create UI components
         self.setup_ui()
@@ -194,93 +217,110 @@ class GopherBrowser:
         ])
     
     def setup_keybindings(self) -> None:
-        """Set up the key bindings for navigation."""
+        """Set up the key bindings for navigation using KeyBindingManager."""
         kb = self.kb
         
-        # Navigation in directory listing
-        @kb.add('up')
-        def _(event):
-            if self.selected_index > 0:
-                self.selected_index -= 1
-                self.update_display()
+        # Create action mappings
+        action_handlers = {
+            'navigate_up': lambda event: self._handle_navigate_up(),
+            'navigate_down': lambda event: self._handle_navigate_down(),
+            'open_item': lambda event: self.open_selected_item(),
+            'go_back': lambda event: self.go_back(),
+            'go_forward': lambda event: self.go_forward(),
+            'quit': lambda event: event.app.exit(),
+            'refresh': lambda event: self.refresh(),
+            'help': lambda event: self.show_help(),
+            'bookmark_toggle': lambda event: self.toggle_bookmark(),
+            'bookmark_list': lambda event: self.show_bookmarks(),
+            'history_show': lambda event: self.show_history(),
+            'go_to_url': lambda event: self.show_url_input(),
+            'go_home': lambda event: self.navigate_to(DEFAULT_URL),
+            'search_directory': lambda event: self._handle_search(),
+            'search_clear': lambda event: self._handle_search_clear(),
+        }
         
-        @kb.add('down')
-        def _(event):
-            if self.selected_index < len(self.current_items) - 1:
-                self.selected_index += 1
-                self.update_display()
+        # Get all bindings for the current context
+        bindings = self.keybinding_manager.get_bindings_by_context(self.current_context)
         
-        @kb.add('enter')
-        def _(event):
-            self.open_selected_item()
+        # Add keybindings to prompt_toolkit
+        for action, binding in bindings.items():
+            if action in action_handlers and binding.enabled:
+                handler = action_handlers[action]
+                
+                # Add all keys for this action
+                for key in binding.keys:
+                    # Convert our normalized format to prompt_toolkit format
+                    pt_key = self._convert_key_to_prompt_toolkit(key)
+                    
+                    # Add all keys for this action
+                    try:
+                        @kb.add(pt_key)
+                        def _(event, handler=handler):
+                            handler(event)
+                    except ValueError as e:
+                        logger.warning(f"Failed to add keybinding {pt_key} for {action}: {e}")
+                        continue
         
-        # History navigation
-        @kb.add('backspace')
-        @kb.add('left', 'escape')
-        def _(event):
-            self.go_back()
+        # Add session management keybindings (if available)
+        if self.session_manager:
+            @kb.add('s')
+            def _(event):
+                self.show_session_dialog()
+            
+            @kb.add('c-s')
+            def _(event):
+                self.save_current_session()
+    
+    def _convert_key_to_prompt_toolkit(self, key: str) -> str:
+        """Convert normalized keybinding format to prompt_toolkit format."""
+        # Convert our normalized format (c-c, a-f1) to prompt_toolkit format
+        if '-' in key:
+            modifier, base_key = key.split('-', 1)
+            
+            # Special handling for certain key combinations that prompt_toolkit doesn't support
+            # Map unsupported combinations to supported ones
+            unsupported_combinations = {
+                'a-left': 'left',  # Alt+left not widely supported
+                'a-right': 'right',  # Alt+right not widely supported
+                's-tab': 'tab',  # Shift+tab becomes just tab
+            }
+            
+            full_key = f"{modifier}-{base_key}"
+            if full_key in unsupported_combinations:
+                return unsupported_combinations[full_key]
+            
+            pt_modifiers = {
+                'c': 'c-',
+                'a': 'a-', 
+                's': 's-',
+                'm': 'm-'  # cmd on mac
+            }
+            if modifier in pt_modifiers:
+                return f"{pt_modifiers[modifier]}{base_key}"
         
-        @kb.add('right')
-        def _(event):
-            self.go_forward()
-        
-        # Quit
-        @kb.add('q')
-        @kb.add('c-c')
-        def _(event):
-            event.app.exit()
-        
-        # Refresh
-        @kb.add('r')
-        @kb.add('f5')
-        def _(event):
-            self.refresh()
-        
-        # Help
-        @kb.add('h')
-        @kb.add('f1')
-        def _(event):
-            self.show_help()
-        
-        # Bookmark management
-        @kb.add('b')
-        @kb.add('c-b')
-        def _(event):
-            self.toggle_bookmark()
-        
-        @kb.add('m')
-        def _(event):
-            self.show_bookmarks()
-        
-        # History
-        @kb.add('c-h')
-        def _(event):
-            self.show_history()
-        
-        # Go to URL (open URL input dialog)
-        @kb.add('g')
-        @kb.add('c-l')
-        def _(event):
-            self.show_url_input()
-        
-        # Home - go to default URL
-        @kb.add('home')
-        def _(event):
-            self.navigate_to(DEFAULT_URL)
-        
-        # Directory search
-        @kb.add('/')
-        @kb.add('c-f')
-        def _(event):
+        return key
+    
+    def _handle_navigate_up(self) -> None:
+        """Handle navigate up action."""
+        if self.selected_index > 0:
+            self.selected_index -= 1
+            self.update_display()
+    
+    def _handle_navigate_down(self) -> None:
+        """Handle navigate down action."""
+        if self.selected_index < len(self.current_items) - 1:
+            self.selected_index += 1
+            self.update_display()
+    
+    def _handle_search(self) -> None:
+        """Handle search action based on current context."""
+        if self.current_context == KeyContext.DIRECTORY or not self.current_items:
             self.show_search_dialog()
-        
-        # Clear search / Exit search mode
-        @kb.add('escape')
-        def _(event):
-            if self.is_searching:
-                self.clear_search()
-            # Note: We don't handle other dialogs here since we're using input_dialog
-            # which handles its own escape key behavior
+    
+    def _handle_search_clear(self) -> None:
+        """Handle search clear action."""
+        if self.is_searching:
+            self.clear_search()
     
     def get_menu_text(self) -> List[Tuple[str, str]]:
         """Get the formatted text for the menu display."""
@@ -528,40 +568,76 @@ class GopherBrowser:
             self.status_bar.text = "Search cleared"
     
     def show_help(self):
-        """Show the help dialog."""
+        """Show the help dialog with current keybindings."""
         help_text = "Modern Gopher Terminal Browser Help\n"
         help_text += "═══════════════════════════════════\n\n"
-        help_text += "Navigation:\n"
-        help_text += "  ↑/↓ Arrow Keys    Navigate directory list\n"
-        help_text += "  Enter             Open selected item\n"
-        help_text += "  Backspace         Go back in history\n"
-        help_text += "  →/← Arrow Keys    Forward/back in history\n"
-        help_text += "  Home              Go to default URL\n"
-        help_text += "  R / F5            Refresh current page\n\n"
-        help_text += "Bookmarks:\n"
-        help_text += "  B / Ctrl+B        Toggle bookmark for current URL\n"
-        help_text += "  M                 Show bookmarks list\n\n"
-        help_text += "Search & Navigation:\n"
-        help_text += "  / / Ctrl+F        Search current directory\n"
-        help_text += "  ESC               Clear search (when searching)\n"
-        help_text += "  Ctrl+H            Show browsing history\n"
-        help_text += "  G / Ctrl+L        Go to URL (feature planned)\n\n"
-        help_text += "General:\n"
-        help_text += "  H / F1            Show this help\n"
-        help_text += "  Q / Ctrl+C        Quit browser\n\n"
+        
+        # Group keybindings by category and show them
+        categories = self.keybinding_manager.get_all_categories()
+        
+        for category in sorted(categories):
+            bindings = self.keybinding_manager.get_bindings_by_category(category)
+            if not bindings:
+                continue
+                
+            help_text += f"{category.title()}:\n"
+            
+            for action, binding in bindings.items():
+                if binding.enabled:
+                    # Format keys nicely
+                    key_display = " / ".join(self._format_key_for_display(key) for key in binding.keys)
+                    help_text += f"  {key_display:<18} {binding.description}\n"
+            
+            help_text += "\n"
+        
         help_text += "Mouse Support:\n"
         help_text += "  Click on items to select them\n"
         help_text += "  Double-click to open items\n\n"
         help_text += "Features:\n"
+        help_text += "  • Customizable keybindings\n"
         help_text += "  • Automatic bookmark management\n"
         help_text += "  • Browsing history tracking\n"
         help_text += "  • Content caching for performance\n"
         help_text += "  • Support for all Gopher item types\n"
         help_text += "  • SSL/TLS support (gophers://)\n\n"
-        help_text += "Press any key to return to browsing."
+        help_text += "Press any key to return to browsing.\n\n"
+        help_text += "Keybindings can be customized by editing ~/.config/modern-gopher/keybindings.json"
         
         # Show in content view
         self.content_view.text = help_text
+    
+    def _format_key_for_display(self, key: str) -> str:
+        """Format a key for display in help text."""
+        # Convert normalized format back to readable format
+        if '-' in key:
+            modifier, base_key = key.split('-', 1)
+            modifier_names = {
+                'c': 'Ctrl',
+                'a': 'Alt',
+                's': 'Shift',
+                'm': 'Cmd'
+            }
+            modifier_name = modifier_names.get(modifier, modifier.upper())
+            return f"{modifier_name}+{base_key.title()}"
+        
+        # Special key names
+        special_keys = {
+            'up': '↑',
+            'down': '↓',
+            'left': '←',
+            'right': '→',
+            'enter': 'Enter',
+            'space': 'Space',
+            'escape': 'Esc',
+            'backspace': 'Backspace',
+            'pageup': 'PgUp',
+            'pagedown': 'PgDn',
+            'home': 'Home',
+            'f1': 'F1',
+            'f5': 'F5'
+        }
+        
+        return special_keys.get(key.lower(), key.upper())
     
     def close_dialog(self):
         """Close any open dialog."""
@@ -656,9 +732,35 @@ class GopherBrowser:
                 self.selected_index = 0
                 self.content_view.text = "Select an item to view."
             elif isinstance(content, str):
-                # Text content
+                # Text content - check if it's HTML
                 self.current_items = []
-                self.content_view.text = content
+                
+                # Detect HTML content by checking for HTML tags and item type
+                is_html = (gopher_url.item_type == 'h' or 
+                          '<html' in content.lower() or 
+                          '<body' in content.lower() or 
+                          '<!doctype html' in content.lower())
+                
+                if is_html:
+                    try:
+                        # Render HTML content using Beautiful Soup
+                        rendered_text, extracted_links = render_html_to_text(content)
+                        self.content_view.text = rendered_text
+                        
+                        # Store extracted links for potential future use
+                        self.extracted_html_links = extracted_links
+                        
+                        # Update status to indicate HTML rendering
+                        self.status_bar.text = f"HTML content rendered ({len(extracted_links)} links found)"
+                        
+                    except Exception as e:
+                        # Fall back to raw text if HTML rendering fails
+                        logger.warning(f"HTML rendering failed, showing raw content: {e}")
+                        self.content_view.text = content
+                        self.status_bar.text = "HTML rendering failed, showing raw content"
+                else:
+                    # Regular text content
+                    self.content_view.text = content
             else:
                 # Binary content
                 self.current_items = []
@@ -709,16 +811,188 @@ class GopherBrowser:
                 del self.client.memory_cache[cache_key]
             self.navigate_to(self.current_url)
     
+    def get_browser_state(self) -> Dict[str, Any]:
+        """Get current browser state for session saving."""
+        return {
+            'current_url': self.current_url,
+            'history': self.history.history.copy(),
+            'history_position': self.history.position,
+            'selected_index': self.selected_index,
+            'is_searching': self.is_searching,
+            'search_query': self.search_query,
+        }
+    
+    def restore_browser_state(self, state: Dict[str, Any]) -> None:
+        """Restore browser state from session data."""
+        try:
+            # Restore URL and navigate
+            if state.get('current_url'):
+                self.current_url = state['current_url']
+            
+            # Restore history
+            if state.get('history'):
+                self.history.history = state['history'].copy()
+                self.history.position = state.get('history_position', -1)
+            
+            # Restore search state
+            self.is_searching = state.get('is_searching', False)
+            self.search_query = state.get('search_query', '')
+            self.selected_index = state.get('selected_index', 0)
+            
+            # Navigate to the restored URL
+            if self.current_url:
+                self.navigate_to(self.current_url)
+            
+            logger.info("Browser state restored from session")
+            
+        except Exception as e:
+            logger.error(f"Failed to restore browser state: {e}")
+            self.status_bar.text = "Failed to restore session"
+    
+    def save_current_session(self, session_name: Optional[str] = None) -> None:
+        """Save current browser state as a session."""
+        if not self.session_manager:
+            self.status_bar.text = "Session management disabled"
+            return
+        
+        try:
+            browser_state = self.get_browser_state()
+            session_id = self.session_manager.save_session(
+                browser_state=browser_state,
+                session_name=session_name
+            )
+            
+            if session_id:
+                session_name = session_name or f"Session {len(self.session_manager.sessions)}"
+                self.status_bar.text = f"Session saved: {session_name}"
+                logger.info(f"Session saved with ID: {session_id}")
+            else:
+                self.status_bar.text = "Failed to save session"
+                
+        except Exception as e:
+            logger.error(f"Error saving session: {e}")
+            self.status_bar.text = f"Session save error: {e}"
+    
+    def load_session(self, session_id: str) -> None:
+        """Load a specific session."""
+        if not self.session_manager:
+            self.status_bar.text = "Session management disabled"
+            return
+        
+        try:
+            browser_state = self.session_manager.load_session(session_id)
+            if browser_state:
+                self.restore_browser_state(browser_state)
+                self.status_bar.text = f"Session loaded: {session_id}"
+            else:
+                self.status_bar.text = f"Session not found: {session_id}"
+                
+        except Exception as e:
+            logger.error(f"Error loading session: {e}")
+            self.status_bar.text = f"Session load error: {e}"
+    
+    def auto_restore_session(self) -> bool:
+        """Automatically restore the most recent session if enabled."""
+        if not self.session_manager or not self.config.session_auto_restore:
+            return False
+        
+        try:
+            browser_state = self.session_manager.get_default_session()
+            if browser_state:
+                self.restore_browser_state(browser_state)
+                logger.info("Auto-restored previous session")
+                return True
+            else:
+                logger.info("No previous session to restore")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to auto-restore session: {e}")
+            return False
+    
+    def show_session_dialog(self) -> None:
+        """Show session management dialog."""
+        if not self.session_manager:
+            self.status_bar.text = "Session management disabled"
+            return
+        
+        try:
+            sessions = self.session_manager.list_sessions()
+            
+            if not sessions:
+                self.status_bar.text = "No saved sessions"
+                return
+            
+            # Create sessions text
+            text = "Saved Sessions:\n\n"
+            for i, session in enumerate(sessions):
+                text += f"{i+1}. {session.name}\n"
+                text += f"    URL: {session.current_url}\n"
+                text += f"    Created: {session.created_datetime.strftime('%Y-%m-%d %H:%M')}\n"
+                text += f"    Last Used: {session.last_used_datetime.strftime('%Y-%m-%d %H:%M')}\n"
+                if session.description:
+                    text += f"    Description: {session.description}\n"
+                if session.tags:
+                    text += f"    Tags: {', '.join(session.tags)}\n"
+                text += "\n"
+            
+            text += "\nSession Management:\n"
+            text += "  Ctrl+S: Save current session\n"
+            text += "  S: Show this session list\n"
+            text += "\nTo load a session, use the CLI: modern-gopher session load <session_id>\n"
+            
+            # Update content view with sessions
+            self.content_view.text = text
+            self.status_bar.text = f"Showing {len(sessions)} saved sessions"
+            
+        except Exception as e:
+            logger.error(f"Error showing session dialog: {e}")
+            self.status_bar.text = f"Session dialog error: {e}"
+    
+    def auto_save_session_on_exit(self) -> None:
+        """Automatically save session on exit if enabled."""
+        if not self.session_manager or not self.config.save_session:
+            return
+        
+        try:
+            # Save current session with auto-generated name
+            browser_state = self.get_browser_state()
+            session_id = self.session_manager.save_session(
+                browser_state=browser_state,
+                session_name="Auto-saved on exit",
+                description=f"Automatically saved on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            )
+            
+            if session_id:
+                logger.info(f"Auto-saved session on exit: {session_id}")
+                
+        except Exception as e:
+            logger.error(f"Failed to auto-save session on exit: {e}")
+    
     def run(self) -> int:
         """Run the browser application."""
         try:
-            # Initial navigation
-            self.navigate_to(self.current_url)
+            # Try to auto-restore session if enabled
+            session_restored = False
+            if self.session_manager and self.config.session_auto_restore:
+                session_restored = self.auto_restore_session()
+                if session_restored:
+                    self.status_bar.text = "Previous session restored"
+            
+            # Initial navigation (only if session wasn't restored)
+            if not session_restored:
+                self.navigate_to(self.current_url)
             
             # Run the application
             self.app.run()
+            
+            # Auto-save session on exit if enabled
+            self.auto_save_session_on_exit()
+            
             return 0
         except KeyboardInterrupt:
+            # Auto-save session on interrupt if enabled
+            self.auto_save_session_on_exit()
             return 130
         except Exception as e:
             logger.exception(f"Unexpected error: {e}")
