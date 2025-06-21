@@ -37,11 +37,24 @@ safe_test() {
         return 1
     fi
     
-    if test "$@"; then
-        echo_success "Test passed: $*"
+    # Parse arguments and stop at comments
+    local test_args=()
+    for arg in "$@"; do
+        # Stop processing arguments if we encounter a comment
+        if [[ $arg == \#* ]]; then
+            break
+        fi
+        test_args+=("$arg")
+    done
+    
+    # Display what we're testing (without comments)
+    local display_args="${test_args[*]}"
+    
+    if test "${test_args[@]}"; then
+        echo_success "Test passed: $display_args"
         return 0
     else
-        echo_warning "Test failed: $*"
+        echo_warning "Test failed: $display_args"
         return 1
     fi
 }
