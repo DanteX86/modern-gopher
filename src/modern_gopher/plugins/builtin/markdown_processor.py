@@ -25,8 +25,12 @@ class MarkdownProcessor(ContentProcessor):
             dependencies=["rich"]
         )
 
-    def should_process(self, content: str, metadata: Dict[str, Any]) -> bool:
-        """Check if content should be processed as Markdown."""
+    def can_process(self, content, metadata: Dict[str, Any]) -> bool:
+        """Check if this processor can handle the given content."""
+        # Only process text content
+        if not isinstance(content, str):
+            return False
+            
         # Check if explicitly marked as markdown
         if metadata.get('content_type') == 'markdown':
             return True

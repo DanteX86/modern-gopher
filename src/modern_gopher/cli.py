@@ -7,6 +7,7 @@ allowing users to interact with Gopher resources through the command line.
 """
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -1102,36 +1103,31 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
         "plugins",
         help="Manage plugins"
     )
-
-    # Plugins subcommands
+    
+    # Plugin subcommands
     plugins_subparsers = plugins_parser.add_subparsers(
         dest="plugin_action",
         help="Plugin action to perform",
         required=True
     )
-
+    
     # List plugins command
     list_plugins_parser = plugins_subparsers.add_parser(
         "list",
-        help="List all plugins"
+        help="List all available plugins"
     )
-    list_plugins_parser.add_argument(
-        "--enabled-only",
-        action="store_true",
-        help="Show only enabled plugins"
-    )
-
+    
     # Plugin info command
     info_plugin_parser = plugins_subparsers.add_parser(
         "info",
-        help="Show plugin information"
+        help="Show detailed information about a plugin"
     )
     info_plugin_parser.add_argument(
         "plugin_name",
-        help="Name of the plugin"
+        help="Name of the plugin to show info for"
     )
-
-    # Plugin enable command
+    
+    # Enable plugin command
     enable_plugin_parser = plugins_subparsers.add_parser(
         "enable",
         help="Enable a plugin"
@@ -1140,8 +1136,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
         "plugin_name",
         help="Name of the plugin to enable"
     )
-
-    # Plugin disable command
+    
+    # Disable plugin command
     disable_plugin_parser = plugins_subparsers.add_parser(
         "disable",
         help="Disable a plugin"
@@ -1150,8 +1146,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
         "plugin_name",
         help="Name of the plugin to disable"
     )
-
-    # Plugin configure command
+    
+    # Configure plugin command
     configure_plugin_parser = plugins_subparsers.add_parser(
         "configure",
         help="Configure a plugin"
@@ -1162,30 +1158,46 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
     )
     configure_plugin_parser.add_argument(
         "--config",
-        help="JSON configuration string"
+        help="Configuration JSON string"
     )
-    configure_plugin_parser.add_argument(
-        "--file",
-        help="Path to JSON configuration file"
+    
+    # Load plugin command
+    load_plugin_parser = plugins_subparsers.add_parser(
+        "load",
+        help="Load a plugin from file"
     )
-
-    # Add common args to plugin subcommands
+    load_plugin_parser.add_argument(
+        "plugin_path",
+        help="Path to the plugin file"
+    )
+    
+    # Common plugin arguments
     for subparser in [
             list_plugins_parser,
             info_plugin_parser,
             enable_plugin_parser,
             disable_plugin_parser,
-            configure_plugin_parser]:
+            configure_plugin_parser,
+            load_plugin_parser]:
         subparser.add_argument(
             "--config-file",
-            help="Path to configuration file"
+            help=("Path to configuration file "
+                  "(defaults to ~/.config/modern-gopher/config.yaml)")
         )
         subparser.add_argument(
             "-v", "--verbose",
             action="store_true",
             help="Enable verbose output"
         )
-
+    
+    
+    # Add --enabled-only flag to list command
+    list_plugins_parser.add_argument(
+        "--enabled-only",
+        action="store_true",
+        help="Show only enabled plugins"
+    )
+    
     plugins_parser.set_defaults(func=cmd_plugins)
 
     return parser.parse_args(args)
@@ -1205,9 +1217,11 @@ def cmd_plugins(args: argparse.Namespace) -> int:
         from modern_gopher.plugins.manager import get_manager
 
         # Load plugin manager
-        config_dir = None
+        # Use default config directory if not provided
         if hasattr(args, 'config_file') and args.config_file:
             config_dir = str(Path(args.config_file).parent)
+        else:
+            config_dir = str(Path.home() / '.config' / 'modern-gopher')
 
         plugin_manager = get_manager(config_dir)
         plugin_manager.initialize()
@@ -1280,13 +1294,13 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 {info['description']}
 """
 
-            if info['dependencies']:
+            if info.get('dependencies'):
                 details += f"\n[bold]Dependencies:[/bold] {
                     ', '.join(
                         info['dependencies'])}"
 
-            if info['supported_item_types']:
-                supported_types = ', '.join(info['supported_item_types'])
+            if info.get('supported_types'):
+                supported_types = ', '.join(info['supported_types'])
                 details += f"\n[bold]Supported Item Types:[/bold] {supported_types}"
 
             panel = Panel(
