@@ -7,14 +7,9 @@ using Beautiful Soup for parsing and the Rich library for terminal formatting.
 
 import logging
 import re
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
 
-from bs4 import BeautifulSoup
-from bs4 import NavigableString
-from bs4 import Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from rich.console import Console
 
 logger = logging.getLogger(__name__)
@@ -36,8 +31,9 @@ class HTMLRenderer:
         self.links: List[Dict[str, str]] = []
         self.images: List[Dict[str, str]] = []
 
-    def render_html(self, html_content: str,
-                    extract_links: bool = True) -> Tuple[str, List[Dict[str, str]]]:
+    def render_html(
+        self, html_content: str, extract_links: bool = True
+    ) -> Tuple[str, List[Dict[str, str]]]:
         """
         Render HTML content to terminal-friendly text.
 
@@ -49,7 +45,7 @@ class HTMLRenderer:
             Tuple of (rendered_text, links_list)
         """
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Reset link and image counters
             self.links = []
@@ -59,7 +55,7 @@ class HTMLRenderer:
             rendered_parts = []
 
             # Handle title
-            title = soup.find('title')
+            title = soup.find("title")
             if title:
                 title_text = self._clean_text(title.get_text())
                 rendered_parts.append(f"📄 {title_text}")
@@ -67,7 +63,7 @@ class HTMLRenderer:
                 rendered_parts.append("")
 
             # Process body content
-            body = soup.find('body') or soup
+            body = soup.find("body") or soup
             rendered_content = self._render_element(body, extract_links)
             rendered_parts.append(rendered_content)
 
@@ -77,7 +73,7 @@ class HTMLRenderer:
                 rendered_parts.append("🔗 Links:")
                 rendered_parts.append("-" * 10)
                 for i, link in enumerate(self.links, 1):
-                    text = link['text'] or link['url']
+                    text = link["text"] or link["url"]
                     rendered_parts.append(f"[{i}] {text}")
                     rendered_parts.append(f"    → {link['url']}")
 
@@ -87,7 +83,7 @@ class HTMLRenderer:
                 rendered_parts.append("🖼️  Images:")
                 rendered_parts.append("-" * 11)
                 for i, img in enumerate(self.images, 1):
-                    alt_text = img.get('alt', 'Image')
+                    alt_text = img.get("alt", "Image")
                     rendered_parts.append(f"[IMG{i}] {alt_text}")
                     rendered_parts.append(f"        → {img['src']}")
 
@@ -118,11 +114,11 @@ class HTMLRenderer:
         text_parts = []
 
         # Handle specific HTML tags
-        if tag_name in ['script', 'style', 'meta', 'link', 'head']:
+        if tag_name in ["script", "style", "meta", "link", "head"]:
             # Skip these elements entirely
             return ""
 
-        elif tag_name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+        elif tag_name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             level = int(tag_name[1])
             text = self._get_element_text(element, extract_links)
             if text.strip():
@@ -136,88 +132,77 @@ class HTMLRenderer:
                 else:
                     text_parts.append(f"\n{'#' * level} {text}\n")
 
-        elif tag_name == 'p':
+        elif tag_name == "p":
             text = self._get_element_text(element, extract_links)
             if text.strip():
                 text_parts.append(f"\n{text}\n")
 
-        elif tag_name == 'a':
-            href = element.get('href', '')
-            text = self._get_element_text(
-                element, False)  # Don't extract nested links
+        elif tag_name == "a":
+            href = element.get("href", "")
+            text = self._get_element_text(element, False)  # Don't extract nested links
             if extract_links and href:
-                self.links.append({
-                    'url': href,
-                    'text': text,
-                    'title': element.get('title', '')
-                })
+                self.links.append({"url": href, "text": text, "title": element.get("title", "")})
                 link_num = len(self.links)
                 text_parts.append(f"{text}[{link_num}]")
             else:
                 text_parts.append(text)
 
-        elif tag_name == 'img':
-            src = element.get('src', '')
-            alt = element.get('alt', 'Image')
+        elif tag_name == "img":
+            src = element.get("src", "")
+            alt = element.get("alt", "Image")
             if src:
-                self.images.append({
-                    'src': src,
-                    'alt': alt,
-                    'title': element.get('title', '')
-                })
+                self.images.append({"src": src, "alt": alt, "title": element.get("title", "")})
                 img_num = len(self.images)
                 text_parts.append(f"[IMG{img_num}:{alt}]")
             else:
                 text_parts.append(f"[{alt}]")
 
-        elif tag_name in ['ul', 'ol']:
+        elif tag_name in ["ul", "ol"]:
             text_parts.append("\n")
-            for i, li in enumerate(element.find_all('li', recursive=False), 1):
+            for i, li in enumerate(element.find_all("li", recursive=False), 1):
                 li_text = self._get_element_text(li, extract_links)
                 if li_text.strip():
-                    if tag_name == 'ol':
+                    if tag_name == "ol":
                         text_parts.append(f"  {i}. {li_text}")
                     else:
                         text_parts.append(f"  • {li_text}")
             text_parts.append("\n")
 
-        elif tag_name == 'li':
+        elif tag_name == "li":
             # Handle individual list items (when not in ul/ol context)
             text = self._get_element_text(element, extract_links)
             if text.strip():
                 text_parts.append(f"• {text}")
 
-        elif tag_name in ['table']:
+        elif tag_name in ["table"]:
             text_parts.append(self._render_table(element, extract_links))
 
-        elif tag_name in ['blockquote']:
+        elif tag_name in ["blockquote"]:
             text = self._get_element_text(element, extract_links)
             if text.strip():
-                quoted_lines = [
-                    f"  > {line}" for line in text.strip().split('\n')]
+                quoted_lines = [f"  > {line}" for line in text.strip().split("\n")]
                 text_parts.append("\n" + "\n".join(quoted_lines) + "\n")
 
-        elif tag_name in ['br']:
+        elif tag_name in ["br"]:
             text_parts.append("\n")
 
-        elif tag_name in ['hr']:
+        elif tag_name in ["hr"]:
             text_parts.append("\n" + "-" * 50 + "\n")
 
-        elif tag_name in ['strong', 'b']:
+        elif tag_name in ["strong", "b"]:
             text = self._get_element_text(element, extract_links)
             text_parts.append(f"**{text}**")
 
-        elif tag_name in ['em', 'i']:
+        elif tag_name in ["em", "i"]:
             text = self._get_element_text(element, extract_links)
             text_parts.append(f"*{text}*")
 
-        elif tag_name in ['code']:
+        elif tag_name in ["code"]:
             text = self._get_element_text(element, extract_links)
             text_parts.append(f"`{text}`")
 
-        elif tag_name in ['pre']:
-            text = self._get_element_text(
-                element, extract_links, preserve_whitespace=True)
+        elif tag_name in ["pre"]:
+            text = self._get_element_text(element, extract_links, preserve_whitespace=True)
             text_parts.append(f"\n```\n{text}\n```\n")
 
         else:
@@ -230,10 +215,8 @@ class HTMLRenderer:
         return "".join(text_parts)
 
     def _get_element_text(
-            self,
-            element,
-            extract_links: bool = True,
-            preserve_whitespace: bool = False) -> str:
+        self, element, extract_links: bool = True, preserve_whitespace: bool = False
+    ) -> str:
         """
         Get text content from an element, processing children appropriately.
 
@@ -270,9 +253,9 @@ class HTMLRenderer:
         rows = []
 
         # Process table rows
-        for tr in table_element.find_all('tr'):
+        for tr in table_element.find_all("tr"):
             cells = []
-            for cell in tr.find_all(['td', 'th']):
+            for cell in tr.find_all(["td", "th"]):
                 cell_text = self._get_element_text(cell, extract_links)
                 cells.append(cell_text.strip() or " ")
             if cells:
@@ -292,8 +275,7 @@ class HTMLRenderer:
 
         # Render table
         table_lines = []
-        table_lines.append("\n┌" + "┬".join("─" * (w + 2)
-                           for w in col_widths) + "┐")
+        table_lines.append("\n┌" + "┬".join("─" * (w + 2) for w in col_widths) + "┐")
 
         for i, row in enumerate(rows):
             # Pad row to max columns
@@ -306,11 +288,9 @@ class HTMLRenderer:
 
             # Add separator after header row
             if i == 0 and len(rows) > 1:
-                table_lines.append("├" + "┼".join("─" * (w + 2)
-                                   for w in col_widths) + "┤")
+                table_lines.append("├" + "┼".join("─" * (w + 2) for w in col_widths) + "┤")
 
-        table_lines.append("└" + "┴".join("─" * (w + 2)
-                           for w in col_widths) + "┘\n")
+        table_lines.append("└" + "┴".join("─" * (w + 2) for w in col_widths) + "┘\n")
 
         return "\n".join(table_lines)
 
@@ -328,7 +308,7 @@ class HTMLRenderer:
             return ""
 
         # Normalize whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
         text = text.strip()
 
         return text
@@ -344,15 +324,17 @@ class HTMLRenderer:
             List of link dictionaries
         """
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
             links = []
 
-            for link in soup.find_all('a', href=True):
-                links.append({
-                    'url': link['href'],
-                    'text': self._clean_text(link.get_text()),
-                    'title': link.get('title', '')
-                })
+            for link in soup.find_all("a", href=True):
+                links.append(
+                    {
+                        "url": link["href"],
+                        "text": self._clean_text(link.get_text()),
+                        "title": link.get("title", ""),
+                    }
+                )
 
             return links
 
@@ -362,8 +344,8 @@ class HTMLRenderer:
 
 
 def render_html_to_text(
-        html_content: str,
-        extract_links: bool = True) -> Tuple[str, List[Dict[str, str]]]:
+    html_content: str, extract_links: bool = True
+) -> Tuple[str, List[Dict[str, str]]]:
     """Convenience function to render HTML content to text.
 
     Args:

@@ -8,9 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from modern_gopher.keybindings import KeyBinding
-from modern_gopher.keybindings import KeyBindingManager
-from modern_gopher.keybindings import KeyContext
+from modern_gopher.keybindings import KeyBinding, KeyBindingManager, KeyContext
 
 
 class TestKeyBinding(unittest.TestCase):
@@ -19,21 +17,21 @@ class TestKeyBinding(unittest.TestCase):
     def test_key_normalization(self):
         """Test key normalization functionality."""
         # Test modifier normalization
-        self.assertEqual(KeyBinding.normalize_key('ctrl+c'), 'c-c')
-        self.assertEqual(KeyBinding.normalize_key('alt+tab'), 'a-tab')
-        self.assertEqual(KeyBinding.normalize_key('shift+f1'), 's-f1')
-        self.assertEqual(KeyBinding.normalize_key('cmd+z'), 'm-z')
+        self.assertEqual(KeyBinding.normalize_key("ctrl+c"), "c-c")
+        self.assertEqual(KeyBinding.normalize_key("alt+tab"), "a-tab")
+        self.assertEqual(KeyBinding.normalize_key("shift+f1"), "s-f1")
+        self.assertEqual(KeyBinding.normalize_key("cmd+z"), "m-z")
 
         # Test special key aliases
-        self.assertEqual(KeyBinding.normalize_key('return'), 'enter')
-        self.assertEqual(KeyBinding.normalize_key('esc'), 'escape')
-        self.assertEqual(KeyBinding.normalize_key('del'), 'delete')
-        self.assertEqual(KeyBinding.normalize_key('pgup'), 'pageup')
-        self.assertEqual(KeyBinding.normalize_key('pgdn'), 'pagedown')
+        self.assertEqual(KeyBinding.normalize_key("return"), "enter")
+        self.assertEqual(KeyBinding.normalize_key("esc"), "escape")
+        self.assertEqual(KeyBinding.normalize_key("del"), "delete")
+        self.assertEqual(KeyBinding.normalize_key("pgup"), "pageup")
+        self.assertEqual(KeyBinding.normalize_key("pgdn"), "pagedown")
 
         # Test case insensitive
-        self.assertEqual(KeyBinding.normalize_key('CTRL+C'), 'c-c')
-        self.assertEqual(KeyBinding.normalize_key('Enter'), 'enter')
+        self.assertEqual(KeyBinding.normalize_key("CTRL+C"), "c-c")
+        self.assertEqual(KeyBinding.normalize_key("Enter"), "enter")
 
     def test_key_binding_creation(self):
         """Test KeyBinding creation and normalization."""
@@ -41,11 +39,11 @@ class TestKeyBinding(unittest.TestCase):
             action="test_action",
             keys=["ctrl+c", "ESC", "return"],
             context=KeyContext.GLOBAL,
-            description="Test binding"
+            description="Test binding",
         )
 
         # Keys should be normalized
-        self.assertEqual(binding.keys, ['c-c', 'escape', 'enter'])
+        self.assertEqual(binding.keys, ["c-c", "escape", "enter"])
         self.assertEqual(binding.action, "test_action")
         self.assertEqual(binding.context, KeyContext.GLOBAL)
         self.assertEqual(binding.description, "Test binding")
@@ -58,36 +56,35 @@ class TestKeyBinding(unittest.TestCase):
             action="action1",
             keys=["q", "c-c"],
             context=KeyContext.GLOBAL,
-            description="First binding"
+            description="First binding",
         )
 
         binding2 = KeyBinding(
             action="action2",
             keys=["w", "c-c"],  # Conflicts with c-c
             context=KeyContext.GLOBAL,
-            description="Second binding"
+            description="Second binding",
         )
 
         binding3 = KeyBinding(
             action="action3",
             keys=["q"],  # Conflicts with q
             context=KeyContext.BROWSER,
-            description="Third binding"
+            description="Third binding",
         )
 
         binding4 = KeyBinding(
             action="action4",
             keys=["q"],  # No conflict - different context
             context=KeyContext.CONTENT,
-            description="Fourth binding"
+            description="Fourth binding",
         )
 
         # Test conflicts
         self.assertTrue(binding1.conflicts_with(binding2))
         # Global conflicts with specific
         self.assertTrue(binding1.conflicts_with(binding3))
-        self.assertFalse(binding3.conflicts_with(
-            binding4))  # Different contexts
+        self.assertFalse(binding3.conflicts_with(binding4))  # Different contexts
 
 
 class TestKeyBindingManager(unittest.TestCase):
@@ -116,29 +113,15 @@ class TestKeyBindingManager(unittest.TestCase):
     def test_action_lookup(self):
         """Test getting actions for keys."""
         # Test global actions
-        self.assertEqual(
-            self.manager.get_action_for_key("q", KeyContext.BROWSER),
-            "quit"
-        )
-        self.assertEqual(
-            self.manager.get_action_for_key("c-c", KeyContext.CONTENT),
-            "quit"
-        )
+        self.assertEqual(self.manager.get_action_for_key("q", KeyContext.BROWSER), "quit")
+        self.assertEqual(self.manager.get_action_for_key("c-c", KeyContext.CONTENT), "quit")
 
         # Test context-specific actions
-        self.assertEqual(
-            self.manager.get_action_for_key("up", KeyContext.BROWSER),
-            "navigate_up"
-        )
-        self.assertEqual(
-            self.manager.get_action_for_key("k", KeyContext.BROWSER),
-            "navigate_up"
-        )
+        self.assertEqual(self.manager.get_action_for_key("up", KeyContext.BROWSER), "navigate_up")
+        self.assertEqual(self.manager.get_action_for_key("k", KeyContext.BROWSER), "navigate_up")
 
         # Test non-existent key
-        self.assertIsNone(
-            self.manager.get_action_for_key("xyz", KeyContext.BROWSER)
-        )
+        self.assertIsNone(self.manager.get_action_for_key("xyz", KeyContext.BROWSER))
 
     def test_key_lookup(self):
         """Test getting keys for actions."""
@@ -151,10 +134,7 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertIn("k", nav_up_keys)
 
         # Non-existent action
-        self.assertEqual(
-            self.manager.get_keys_for_action("nonexistent"),
-            []
-        )
+        self.assertEqual(self.manager.get_keys_for_action("nonexistent"), [])
 
     def test_add_binding(self):
         """Test adding new bindings."""
@@ -163,7 +143,7 @@ class TestKeyBindingManager(unittest.TestCase):
             keys=["ctrl+x"],
             context=KeyContext.BROWSER,
             description="Custom action",
-            category="custom"
+            category="custom",
         )
 
         # Should succeed
@@ -172,8 +152,7 @@ class TestKeyBindingManager(unittest.TestCase):
 
         # Should be able to look it up
         self.assertEqual(
-            self.manager.get_action_for_key("c-x", KeyContext.BROWSER),
-            "custom_action"
+            self.manager.get_action_for_key("c-x", KeyContext.BROWSER), "custom_action"
         )
 
     def test_conflict_prevention(self):
@@ -182,7 +161,7 @@ class TestKeyBindingManager(unittest.TestCase):
             action="conflicting_action",
             keys=["q"],  # Conflicts with quit
             context=KeyContext.GLOBAL,
-            description="Conflicting action"
+            description="Conflicting action",
         )
 
         # Should fail due to conflict
@@ -196,23 +175,20 @@ class TestKeyBindingManager(unittest.TestCase):
             action="custom_action",
             keys=["ctrl+y"],
             context=KeyContext.BROWSER,
-            description="Custom action"
+            description="Custom action",
         )
         self.manager.add_binding(custom_binding)
 
         # Verify it exists
         self.assertIn("custom_action", self.manager.bindings)
         self.assertEqual(
-            self.manager.get_action_for_key("c-y", KeyContext.BROWSER),
-            "custom_action"
+            self.manager.get_action_for_key("c-y", KeyContext.BROWSER), "custom_action"
         )
 
         # Remove it
         self.assertTrue(self.manager.remove_binding("custom_action"))
         self.assertNotIn("custom_action", self.manager.bindings)
-        self.assertIsNone(
-            self.manager.get_action_for_key("c-y", KeyContext.BROWSER)
-        )
+        self.assertIsNone(self.manager.get_action_for_key("c-y", KeyContext.BROWSER))
 
         # Try to remove non-existent binding
         self.assertFalse(self.manager.remove_binding("nonexistent"))
@@ -223,25 +199,16 @@ class TestKeyBindingManager(unittest.TestCase):
         original_keys = self.manager.get_keys_for_action("navigate_up")
         new_keys = ["ctrl+up", "shift+k"]
 
-        self.assertTrue(
-            self.manager.set_keys_for_action(
-                "navigate_up", new_keys))
+        self.assertTrue(self.manager.set_keys_for_action("navigate_up", new_keys))
 
         # Check new keys work
-        self.assertEqual(
-            self.manager.get_action_for_key("c-up", KeyContext.BROWSER),
-            "navigate_up"
-        )
-        self.assertEqual(
-            self.manager.get_action_for_key("s-k", KeyContext.BROWSER),
-            "navigate_up"
-        )
+        self.assertEqual(self.manager.get_action_for_key("c-up", KeyContext.BROWSER), "navigate_up")
+        self.assertEqual(self.manager.get_action_for_key("s-k", KeyContext.BROWSER), "navigate_up")
 
         # Check old keys don't work
         for old_key in original_keys:
             self.assertNotEqual(
-                self.manager.get_action_for_key(old_key, KeyContext.BROWSER),
-                "navigate_up"
+                self.manager.get_action_for_key(old_key, KeyContext.BROWSER), "navigate_up"
             )
 
     def test_disable_enable_binding(self):
@@ -250,9 +217,7 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertTrue(self.manager.disable_binding("quit"))
 
         # Should not work anymore
-        self.assertIsNone(
-            self.manager.get_action_for_key("q", KeyContext.BROWSER)
-        )
+        self.assertIsNone(self.manager.get_action_for_key("q", KeyContext.BROWSER))
 
         # But binding should still exist
         self.assertIn("quit", self.manager.bindings)
@@ -262,10 +227,7 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertTrue(self.manager.enable_binding("quit"))
 
         # Should work again
-        self.assertEqual(
-            self.manager.get_action_for_key("q", KeyContext.BROWSER),
-            "quit"
-        )
+        self.assertEqual(self.manager.get_action_for_key("q", KeyContext.BROWSER), "quit")
         self.assertTrue(self.manager.bindings["quit"].enabled)
 
     def test_filtering_by_category(self):
@@ -284,8 +246,7 @@ class TestKeyBindingManager(unittest.TestCase):
 
     def test_filtering_by_context(self):
         """Test filtering bindings by context."""
-        browser_bindings = self.manager.get_bindings_by_context(
-            KeyContext.BROWSER)
+        browser_bindings = self.manager.get_bindings_by_context(KeyContext.BROWSER)
 
         # Should include browser-specific bindings
         self.assertIn("navigate_up", browser_bindings)
@@ -296,8 +257,7 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertIn("help", browser_bindings)
 
         # Content context should have different bindings
-        content_bindings = self.manager.get_bindings_by_context(
-            KeyContext.CONTENT)
+        content_bindings = self.manager.get_bindings_by_context(KeyContext.CONTENT)
         self.assertIn("scroll_up", content_bindings)
         self.assertIn("scroll_down", content_bindings)
 
@@ -316,8 +276,7 @@ class TestKeyBindingManager(unittest.TestCase):
         # Invalid keys
         self.assertFalse(self.manager.validate_key(""))
         self.assertFalse(self.manager.validate_key("   "))
-        self.assertFalse(self.manager.validate_key(
-            "invalid+modifier+key"))  # Multiple + signs
+        self.assertFalse(self.manager.validate_key("invalid+modifier+key"))  # Multiple + signs
         self.assertFalse(self.manager.validate_key("x-y"))  # Invalid modifier
         self.assertFalse(self.manager.validate_key("c-"))  # Empty key part
 
@@ -329,7 +288,7 @@ class TestKeyBindingManager(unittest.TestCase):
             keys=["ctrl+t"],
             context=KeyContext.BROWSER,
             description="Test action",
-            category="test"
+            category="test",
         )
         self.manager.add_binding(custom_binding)
 
@@ -342,10 +301,7 @@ class TestKeyBindingManager(unittest.TestCase):
 
         # Should have the custom binding
         self.assertIn("test_action", new_manager.bindings)
-        self.assertEqual(
-            new_manager.get_action_for_key("c-t", KeyContext.BROWSER),
-            "test_action"
-        )
+        self.assertEqual(new_manager.get_action_for_key("c-t", KeyContext.BROWSER), "test_action")
 
     def test_backup(self):
         """Test backup functionality."""
@@ -356,7 +312,7 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertTrue(backup_path.exists())
 
         # Backup should contain current bindings
-        with open(backup_path, 'r') as f:
+        with open(backup_path, "r") as f:
             backup_data = json.load(f)
 
         self.assertIn("quit", backup_data)
@@ -369,7 +325,7 @@ class TestKeyBindingManager(unittest.TestCase):
             action="custom_action",
             keys=["ctrl+z"],
             context=KeyContext.BROWSER,
-            description="Custom action"
+            description="Custom action",
         )
         self.manager.add_binding(custom_binding)
 
@@ -405,20 +361,16 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertIn("enabled", quit_data)
 
         # Create new manager from dict
-        new_manager = KeyBindingManager(
-            config_file=Path(self.temp_dir) / "new.json")
+        new_manager = KeyBindingManager(config_file=Path(self.temp_dir) / "new.json")
         new_manager.from_dict(data)
 
         # Should have same bindings
-        self.assertEqual(
-            set(self.manager.bindings.keys()),
-            set(new_manager.bindings.keys())
-        )
+        self.assertEqual(set(self.manager.bindings.keys()), set(new_manager.bindings.keys()))
 
         # Should work the same
         self.assertEqual(
             self.manager.get_action_for_key("q", KeyContext.BROWSER),
-            new_manager.get_action_for_key("q", KeyContext.BROWSER)
+            new_manager.get_action_for_key("q", KeyContext.BROWSER),
         )
 
     def test_categories(self):
@@ -433,10 +385,11 @@ class TestKeyBindingManager(unittest.TestCase):
             "bookmarks",
             "history",
             "search",
-            "content"}
+            "content",
+        }
 
         self.assertTrue(expected_categories.issubset(categories))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

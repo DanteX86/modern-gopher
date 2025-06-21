@@ -5,9 +5,7 @@ Tests for the bookmark management system.
 import tempfile
 from pathlib import Path
 
-
-from modern_gopher.browser.bookmarks import Bookmark
-from modern_gopher.browser.bookmarks import BookmarkManager
+from modern_gopher.browser.bookmarks import Bookmark, BookmarkManager
 
 
 class TestBookmark:
@@ -19,7 +17,7 @@ class TestBookmark:
             url="gopher://gopher.floodgap.com",
             title="Floodgap",
             description="Popular Gopher server",
-            tags=["popular", "reference"]
+            tags=["popular", "reference"],
         )
 
         assert bookmark.url == "gopher://gopher.floodgap.com"
@@ -29,25 +27,21 @@ class TestBookmark:
 
     def test_bookmark_to_dict(self):
         """Test converting bookmark to dictionary."""
-        bookmark = Bookmark(
-            url="gopher://test.com",
-            title="Test",
-            visit_count=5
-        )
+        bookmark = Bookmark(url="gopher://test.com", title="Test", visit_count=5)
 
         data = bookmark.to_dict()
-        assert data['url'] == "gopher://test.com"
-        assert data['title'] == "Test"
-        assert data['visit_count'] == 5
+        assert data["url"] == "gopher://test.com"
+        assert data["title"] == "Test"
+        assert data["visit_count"] == 5
 
     def test_bookmark_from_dict(self):
         """Test creating bookmark from dictionary."""
         data = {
-            'url': "gopher://test.com",
-            'title': "Test",
-            'description': "Test bookmark",
-            'tags': ["test"],
-            'visit_count': 3
+            "url": "gopher://test.com",
+            "title": "Test",
+            "description": "Test bookmark",
+            "tags": ["test"],
+            "visit_count": 3,
         }
 
         bookmark = Bookmark.from_dict(data)
@@ -64,7 +58,7 @@ class TestBookmarkManager:
     def test_manager_initialization(self):
         """Test bookmark manager initialization."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Should have default bookmarks
@@ -78,15 +72,12 @@ class TestBookmarkManager:
     def test_add_bookmark(self):
         """Test adding a bookmark."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add a bookmark
             result = manager.add(
-                "gopher://test.example.com",
-                "Test Site",
-                "A test Gopher site",
-                ["test"]
+                "gopher://test.example.com", "Test Site", "A test Gopher site", ["test"]
             )
 
             assert result is True
@@ -99,7 +90,7 @@ class TestBookmarkManager:
     def test_remove_bookmark(self):
         """Test removing a bookmark."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add a bookmark
@@ -118,14 +109,19 @@ class TestBookmarkManager:
     def test_search_bookmarks(self):
         """Test searching bookmarks."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add test bookmarks
-            manager.add("gopher://python.org", "Python Documentation",
-                        "Official Python docs", ["python", "docs"])
-            manager.add("gopher://golang.org", "Go Documentation",
-                        "Official Go docs", ["go", "docs"])
+            manager.add(
+                "gopher://python.org",
+                "Python Documentation",
+                "Official Python docs",
+                ["python", "docs"],
+            )
+            manager.add(
+                "gopher://golang.org", "Go Documentation", "Official Go docs", ["go", "docs"]
+            )
 
             # Search by title
             results = manager.search("python")
@@ -144,22 +140,12 @@ class TestBookmarkManager:
     def test_get_by_tag(self):
         """Test getting bookmarks by tag."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add test bookmarks
-            manager.add(
-                "gopher://python.org",
-                "Python",
-                tags=[
-                    "programming",
-                    "python"])
-            manager.add(
-                "gopher://golang.org",
-                "Go",
-                tags=[
-                    "programming",
-                    "go"])
+            manager.add("gopher://python.org", "Python", tags=["programming", "python"])
+            manager.add("gopher://golang.org", "Go", tags=["programming", "go"])
             manager.add("gopher://news.example.com", "News", tags=["news"])
 
             # Get programming bookmarks
@@ -174,7 +160,7 @@ class TestBookmarkManager:
     def test_record_visit(self):
         """Test recording visits to bookmarks."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add a bookmark
@@ -196,7 +182,7 @@ class TestBookmarkManager:
     def test_most_visited(self):
         """Test getting most visited bookmarks."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
             manager = BookmarkManager(str(bookmarks_file))
 
             # Add bookmarks with different visit counts
@@ -220,7 +206,7 @@ class TestBookmarkManager:
     def test_persistence(self):
         """Test that bookmarks persist across manager instances."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
 
             # Create first manager and add bookmark
             manager1 = BookmarkManager(str(bookmarks_file))
@@ -235,8 +221,8 @@ class TestBookmarkManager:
     def test_export_import(self):
         """Test exporting and importing bookmarks."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bookmarks_file = Path(temp_dir) / 'bookmarks.json'
-            export_file = Path(temp_dir) / 'export.json'
+            bookmarks_file = Path(temp_dir) / "bookmarks.json"
+            export_file = Path(temp_dir) / "export.json"
 
             # Create manager and add bookmarks
             manager1 = BookmarkManager(str(bookmarks_file))
@@ -249,8 +235,7 @@ class TestBookmarkManager:
             assert export_file.exists()
 
             # Create new manager and import
-            manager2 = BookmarkManager(
-                str(Path(temp_dir) / 'new_bookmarks.json'))
+            manager2 = BookmarkManager(str(Path(temp_dir) / "new_bookmarks.json"))
             imported_count = manager2.import_bookmarks(str(export_file))
 
             # Should import the 2 test bookmarks plus any defaults that weren't

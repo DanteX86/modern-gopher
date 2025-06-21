@@ -112,7 +112,7 @@ modern-gopher browse [options] <url>
 
 | Option | Description |
 |--------|-------------|
-| `--timeout SECONDS` | Socket timeout in seconds (default: 30) |
+|| `--timeout SECONDS` | Socket timeout in seconds (default: 60) |
 | `--ipv4` | Force IPv4 usage |
 | `--ipv6` | Force IPv6 usage |
 | `--ssl` | Use SSL/TLS for the connection |
@@ -138,7 +138,7 @@ modern-gopher get [options] <url>
 |--------|-------------|
 | `-o, --output FILE` | Save resource to specified file |
 | `--markdown` | Render text content as Markdown |
-| `--timeout SECONDS` | Socket timeout in seconds (default: 30) |
+|| `--timeout SECONDS` | Socket timeout in seconds (default: 60) |
 | `--ipv4` | Force IPv4 usage |
 | `--ipv6` | Force IPv6 usage |
 | `--ssl` | Use SSL/TLS for the connection |
@@ -196,7 +196,7 @@ Modern Gopher looks for a configuration file in the following locations (in orde
 ```json
 {
   "connection": {
-    "timeout": 30,
+    "timeout": 60,
     "use_ipv6": false,
     "use_ssl": false
   },
@@ -220,7 +220,7 @@ The following environment variables can be used to configure Modern Gopher:
 |----------|-------------|
 | `MODERN_GOPHER_CONFIG` | Path to the configuration file |
 | `MODERN_GOPHER_CACHE_DIR` | Directory for caching Gopher resources |
-| `MODERN_GOPHER_TIMEOUT` | Default socket timeout in seconds |
+|| `MODERN_GOPHER_TIMEOUT` | Default socket timeout in seconds (default: 60) |
 | `MODERN_GOPHER_USE_IPV6` | Set to "1" to enable IPv6 by default |
 | `MODERN_GOPHER_USE_SSL` | Set to "1" to enable SSL/TLS by default |
 

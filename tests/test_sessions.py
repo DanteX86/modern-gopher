@@ -11,12 +11,9 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-
-from modern_gopher.browser.sessions import BrowserSession
-from modern_gopher.browser.sessions import SessionManager
+from modern_gopher.browser.sessions import BrowserSession, SessionManager
 from modern_gopher.browser.terminal import GopherBrowser
 from modern_gopher.config import ModernGopherConfig
 
@@ -34,7 +31,7 @@ class TestBrowserSession:
             current_url="gopher://example.com",
             history=["gopher://example.com"],
             history_position=0,
-            selected_index=0
+            selected_index=0,
         )
 
         assert session.session_id == "test_session"
@@ -54,7 +51,7 @@ class TestBrowserSession:
             history=[],
             history_position=-1,
             selected_index=0,
-            tags=["work", "research"]
+            tags=["work", "research"],
         )
 
         assert session.tags == ["work", "research"]
@@ -70,7 +67,7 @@ class TestBrowserSession:
             current_url="gopher://example.com",
             history=[],
             history_position=-1,
-            selected_index=0
+            selected_index=0,
         )
 
         assert isinstance(session.created_datetime, datetime)
@@ -87,7 +84,7 @@ class TestBrowserSession:
             history=["gopher://example.com"],
             history_position=0,
             selected_index=0,
-            tags=["test"]
+            tags=["test"],
         )
 
         session_dict = session.to_dict()
@@ -110,7 +107,7 @@ class TestBrowserSession:
             "is_searching": False,
             "search_query": "",
             "description": "Test description",
-            "tags": ["test"]
+            "tags": ["test"],
         }
 
         session = BrowserSession.from_dict(session_data)
@@ -128,9 +125,7 @@ class TestSessionManager:
         self.temp_dir = tempfile.mkdtemp()
         self.session_file = Path(self.temp_dir) / "test_sessions.json"
         self.manager = SessionManager(
-            session_file=str(self.session_file),
-            backup_sessions=True,
-            max_sessions=5
+            session_file=str(self.session_file), backup_sessions=True, max_sessions=5
         )
 
     def test_manager_initialization(self):
@@ -148,14 +143,14 @@ class TestSessionManager:
             "history_position": 0,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
         session_id = self.manager.save_session(
             browser_state=browser_state,
             session_name="Test Session",
             description="Test description",
-            tags=["test"]
+            tags=["test"],
         )
 
         assert session_id
@@ -176,7 +171,7 @@ class TestSessionManager:
             "history_position": 1,
             "selected_index": 2,
             "is_searching": True,
-            "search_query": "test query"
+            "search_query": "test query",
         }
 
         session_id = self.manager.save_session(browser_state=browser_state)
@@ -186,8 +181,7 @@ class TestSessionManager:
 
         assert loaded_state is not None
         assert loaded_state["current_url"] == "gopher://example.com"
-        assert loaded_state["history"] == [
-            "gopher://example.com", "gopher://another.com"]
+        assert loaded_state["history"] == ["gopher://example.com", "gopher://another.com"]
         assert loaded_state["history_position"] == 1
         assert loaded_state["selected_index"] == 2
         assert loaded_state["is_searching"] is True
@@ -207,18 +201,12 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
-        session_id1 = self.manager.save_session(
-            browser_state=browser_state,
-            session_id="session_1"
-        )
+        session_id1 = self.manager.save_session(browser_state=browser_state, session_id="session_1")
         time.sleep(0.01)  # Ensure different timestamps
-        session_id2 = self.manager.save_session(
-            browser_state=browser_state,
-            session_id="session_2"
-        )
+        session_id2 = self.manager.save_session(browser_state=browser_state, session_id="session_2")
 
         # The second session should be the default (most recent)
         default_state = self.manager.get_default_session()
@@ -239,19 +227,15 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
         self.manager.save_session(
-            browser_state=browser_state,
-            session_name="Session 1",
-            session_id="session_1"
+            browser_state=browser_state, session_name="Session 1", session_id="session_1"
         )
         time.sleep(0.01)
         self.manager.save_session(
-            browser_state=browser_state,
-            session_name="Session 2",
-            session_id="session_2"
+            browser_state=browser_state, session_name="Session 2", session_id="session_2"
         )
 
         sessions = self.manager.list_sessions()
@@ -269,7 +253,7 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
         session_id = self.manager.save_session(browser_state=browser_state)
@@ -291,11 +275,10 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
-        session_id = self.manager.save_session(
-            browser_state=browser_state, session_name="Old Name")
+        session_id = self.manager.save_session(browser_state=browser_state, session_name="Old Name")
 
         result = self.manager.rename_session(session_id, "New Name")
         assert result is True
@@ -313,7 +296,7 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
         # Add more sessions than the limit
@@ -323,7 +306,7 @@ class TestSessionManager:
                 browser_state=browser_state,
                 session_name=f"Session {i}",
                 # Explicit session IDs to avoid collisions
-                session_id=f"session_{i}"
+                session_id=f"session_{i}",
             )
             session_ids.append(session_id)
             time.sleep(0.01)  # Ensure different timestamps
@@ -344,19 +327,16 @@ class TestSessionManager:
             "history_position": 0,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
         session_id = self.manager.save_session(
-            browser_state=browser_state,
-            session_name="Persistent Session"
+            browser_state=browser_state, session_name="Persistent Session"
         )
 
         # Create a new manager instance to test loading
         new_manager = SessionManager(
-            session_file=str(self.session_file),
-            backup_sessions=False,
-            max_sessions=10
+            session_file=str(self.session_file), backup_sessions=False, max_sessions=10
         )
 
         assert session_id in new_manager.sessions
@@ -370,12 +350,10 @@ class TestSessionManager:
             "history_position": -1,
             "selected_index": 0,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
-        self.manager.save_session(
-            browser_state=browser_state,
-            session_name="Export Test")
+        self.manager.save_session(browser_state=browser_state, session_name="Export Test")
 
         export_path = Path(self.temp_dir) / "exported_sessions.json"
         result = self.manager.export_sessions(export_path)
@@ -383,44 +361,44 @@ class TestSessionManager:
         assert export_path.exists()
 
         # Verify export content
-        with open(export_path, 'r') as f:
+        with open(export_path, "r") as f:
             export_data = json.load(f)
 
-        assert 'exported_at' in export_data
-        assert 'sessions' in export_data
-        assert len(export_data['sessions']) == 1
+        assert "exported_at" in export_data
+        assert "sessions" in export_data
+        assert len(export_data["sessions"]) == 1
 
     def test_import_sessions(self):
         """Test importing sessions from a file."""
         # Create export data
         export_data = {
-            'exported_at': datetime.now().isoformat(),
-            'sessions': {
-                'imported_session': {
-                    'session_id': 'imported_session',
-                    'name': 'Imported Session',
-                    'created_at': time.time(),
-                    'last_used': time.time(),
-                    'current_url': 'gopher://imported.com',
-                    'history': ['gopher://imported.com'],
-                    'history_position': 0,
-                    'selected_index': 0,
-                    'is_searching': False,
-                    'search_query': '',
-                    'description': '',
-                    'tags': []
+            "exported_at": datetime.now().isoformat(),
+            "sessions": {
+                "imported_session": {
+                    "session_id": "imported_session",
+                    "name": "Imported Session",
+                    "created_at": time.time(),
+                    "last_used": time.time(),
+                    "current_url": "gopher://imported.com",
+                    "history": ["gopher://imported.com"],
+                    "history_position": 0,
+                    "selected_index": 0,
+                    "is_searching": False,
+                    "search_query": "",
+                    "description": "",
+                    "tags": [],
                 }
-            }
+            },
         }
 
         import_path = Path(self.temp_dir) / "import_sessions.json"
-        with open(import_path, 'w') as f:
+        with open(import_path, "w") as f:
             json.dump(export_data, f)
 
         result = self.manager.import_sessions(import_path, merge=True)
         assert result is True
-        assert 'imported_session' in self.manager.sessions
-        assert self.manager.sessions['imported_session'].name == 'Imported Session'
+        assert "imported_session" in self.manager.sessions
+        assert self.manager.sessions["imported_session"].name == "Imported Session"
 
     def test_get_session_info(self):
         """Test getting detailed session information."""
@@ -430,26 +408,26 @@ class TestSessionManager:
             "history_position": 1,
             "selected_index": 0,
             "is_searching": True,
-            "search_query": "test"
+            "search_query": "test",
         }
 
         session_id = self.manager.save_session(
             browser_state=browser_state,
             session_name="Info Test",
             description="Test description",
-            tags=["test", "info"]
+            tags=["test", "info"],
         )
 
         info = self.manager.get_session_info(session_id)
         assert info is not None
-        assert info['id'] == session_id
-        assert info['name'] == "Info Test"
-        assert info['description'] == "Test description"
-        assert info['tags'] == ["test", "info"]
-        assert info['current_url'] == "gopher://example.com"
-        assert info['history_count'] == 2
-        assert info['is_searching'] is True
-        assert info['search_query'] == "test"
+        assert info["id"] == session_id
+        assert info["name"] == "Info Test"
+        assert info["description"] == "Test description"
+        assert info["tags"] == ["test", "info"]
+        assert info["current_url"] == "gopher://example.com"
+        assert info["history_count"] == 2
+        assert info["is_searching"] is True
+        assert info["search_query"] == "test"
 
         # Test nonexistent session
         info = self.manager.get_session_info("nonexistent")
@@ -475,10 +453,9 @@ class TestBrowserSessionIntegration:
         self.mock_config.initial_url = "gopher://test.com"
         self.mock_config.cache_enabled = False
         self.mock_config.max_history_items = 100
-        self.mock_config.bookmarks_file = str(
-            Path(self.temp_dir) / "bookmarks.json")
+        self.mock_config.bookmarks_file = str(Path(self.temp_dir) / "bookmarks.json")
 
-    @patch('modern_gopher.browser.terminal.GopherClient')
+    @patch("modern_gopher.browser.terminal.GopherClient")
     def test_browser_session_integration(self, mock_client_class):
         """Test session integration with the browser."""
         # Mock the client
@@ -486,27 +463,21 @@ class TestBrowserSessionIntegration:
         mock_client_class.return_value = mock_client
         mock_client.get_resource.return_value = []
 
-        with patch('modern_gopher.browser.terminal.KeyBindingManager'):
-            browser = GopherBrowser(
-                initial_url="gopher://test.com",
-                config=self.mock_config
-            )
+        with patch("modern_gopher.browser.terminal.KeyBindingManager"):
+            browser = GopherBrowser(initial_url="gopher://test.com", config=self.mock_config)
 
             # Test that session manager is initialized
             assert browser.session_manager is not None
             assert isinstance(browser.session_manager, SessionManager)
 
-    @patch('modern_gopher.browser.terminal.GopherClient')
+    @patch("modern_gopher.browser.terminal.GopherClient")
     def test_get_browser_state(self, mock_client_class):
         """Test getting browser state for session saving."""
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
-        with patch('modern_gopher.browser.terminal.KeyBindingManager'):
-            browser = GopherBrowser(
-                initial_url="gopher://test.com",
-                config=self.mock_config
-            )
+        with patch("modern_gopher.browser.terminal.KeyBindingManager"):
+            browser = GopherBrowser(initial_url="gopher://test.com", config=self.mock_config)
 
             # Set some browser state
             browser.current_url = "gopher://example.com"
@@ -517,24 +488,21 @@ class TestBrowserSessionIntegration:
 
             state = browser.get_browser_state()
 
-            assert state['current_url'] == "gopher://example.com"
-            assert state['history'] == ["gopher://example.com"]
-            assert state['history_position'] == 0
-            assert state['selected_index'] == 2
-            assert state['is_searching'] is True
-            assert state['search_query'] == "test query"
+            assert state["current_url"] == "gopher://example.com"
+            assert state["history"] == ["gopher://example.com"]
+            assert state["history_position"] == 0
+            assert state["selected_index"] == 2
+            assert state["is_searching"] is True
+            assert state["search_query"] == "test query"
 
-    @patch('modern_gopher.browser.terminal.GopherClient')
+    @patch("modern_gopher.browser.terminal.GopherClient")
     def test_save_current_session(self, mock_client_class):
         """Test manual session saving."""
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
-        with patch('modern_gopher.browser.terminal.KeyBindingManager'):
-            browser = GopherBrowser(
-                initial_url="gopher://test.com",
-                config=self.mock_config
-            )
+        with patch("modern_gopher.browser.terminal.KeyBindingManager"):
+            browser = GopherBrowser(initial_url="gopher://test.com", config=self.mock_config)
 
             # Set browser state
             browser.current_url = "gopher://example.com"
@@ -543,8 +511,7 @@ class TestBrowserSessionIntegration:
             # Simulate saving a session directly (bypass dialog)
             browser_state = browser.get_browser_state()
             browser.session_manager.save_session(
-                browser_state=browser_state,
-                session_name="Test Session"
+                browser_state=browser_state, session_name="Test Session"
             )
 
             # Verify session was saved
@@ -552,17 +519,14 @@ class TestBrowserSessionIntegration:
             assert len(sessions) == 1
             assert sessions[0].name == "Test Session"
 
-    @patch('modern_gopher.browser.terminal.GopherClient')
+    @patch("modern_gopher.browser.terminal.GopherClient")
     def test_auto_restore_session(self, mock_client_class):
         """Test automatic session restoration."""
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
         # First, create a session to restore
-        session_manager = SessionManager(
-            session_file=str(self.session_file),
-            max_sessions=5
-        )
+        session_manager = SessionManager(session_file=str(self.session_file), max_sessions=5)
 
         browser_state = {
             "current_url": "gopher://restored.com",
@@ -570,19 +534,14 @@ class TestBrowserSessionIntegration:
             "history_position": 1,
             "selected_index": 3,
             "is_searching": False,
-            "search_query": ""
+            "search_query": "",
         }
 
-        session_manager.save_session(
-            browser_state=browser_state,
-            session_name="Restore Test")
+        session_manager.save_session(browser_state=browser_state, session_name="Restore Test")
 
         # Now create browser and test restoration
-        with patch('modern_gopher.browser.terminal.KeyBindingManager'):
-            browser = GopherBrowser(
-                initial_url="gopher://test.com",
-                config=self.mock_config
-            )
+        with patch("modern_gopher.browser.terminal.KeyBindingManager"):
+            browser = GopherBrowser(initial_url="gopher://test.com", config=self.mock_config)
 
             # Test auto restore
             restored = browser.auto_restore_session()
@@ -606,13 +565,10 @@ class TestSessionErrorHandling:
         session_file = Path(temp_dir) / "subdir" / "sessions.json"
 
         # Mock the directory creation to fail
-        with patch('pathlib.Path.mkdir', side_effect=OSError("Permission denied")):
+        with patch("pathlib.Path.mkdir", side_effect=OSError("Permission denied")):
             # Should handle directory creation failure gracefully
             try:
-                manager = SessionManager(
-                    session_file=str(session_file),
-                    max_sessions=5
-                )
+                manager = SessionManager(session_file=str(session_file), max_sessions=5)
                 # If it doesn't crash, should have empty sessions
                 assert len(manager.sessions) == 0
             except OSError:
@@ -625,14 +581,11 @@ class TestSessionErrorHandling:
         session_file = Path(temp_dir) / "corrupted_sessions.json"
 
         # Create corrupted JSON file
-        with open(session_file, 'w') as f:
+        with open(session_file, "w") as f:
             f.write("{ invalid json")
 
         # Should handle corrupted file gracefully
-        manager = SessionManager(
-            session_file=str(session_file),
-            max_sessions=5
-        )
+        manager = SessionManager(session_file=str(session_file), max_sessions=5)
 
         assert len(manager.sessions) == 0
 
@@ -645,24 +598,21 @@ class TestSessionErrorHandling:
         incomplete_session_data = {
             "incomplete_session": {
                 "session_id": "incomplete_session",
-                "name": "Incomplete Session"
+                "name": "Incomplete Session",
                 # Missing required fields like created_at, last_used, etc.
             }
         }
 
-        with open(session_file, 'w') as f:
+        with open(session_file, "w") as f:
             json.dump(incomplete_session_data, f)
 
         # Should handle incomplete session data gracefully
-        manager = SessionManager(
-            session_file=str(session_file),
-            max_sessions=5
-        )
+        manager = SessionManager(session_file=str(session_file), max_sessions=5)
 
         # Should not load the incomplete session
         assert "incomplete_session" not in manager.sessions
 
-    @patch('modern_gopher.browser.terminal.GopherClient')
+    @patch("modern_gopher.browser.terminal.GopherClient")
     def test_browser_session_disabled(self, mock_client_class):
         """Test browser behavior when sessions are disabled."""
         mock_client = Mock()
@@ -675,11 +625,8 @@ class TestSessionErrorHandling:
         mock_config.max_history_items = 100
         mock_config.bookmarks_file = "/tmp/bookmarks.json"
 
-        with patch('modern_gopher.browser.terminal.KeyBindingManager'):
-            browser = GopherBrowser(
-                initial_url="gopher://test.com",
-                config=mock_config
-            )
+        with patch("modern_gopher.browser.terminal.KeyBindingManager"):
+            browser = GopherBrowser(initial_url="gopher://test.com", config=mock_config)
 
             # Session manager should be None
             assert browser.session_manager is None

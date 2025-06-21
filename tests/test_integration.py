@@ -12,25 +12,19 @@ import time
 import pytest
 
 from modern_gopher.core.client import GopherClient
-from modern_gopher.core.protocol import GopherConnectionError
-from modern_gopher.core.protocol import GopherProtocolError
-from modern_gopher.core.protocol import request_gopher_resource
-from modern_gopher.core.types import GopherItemType
-from modern_gopher.core.types import parse_gopher_directory
+from modern_gopher.core.protocol import (
+    GopherConnectionError,
+    GopherProtocolError,
+    request_gopher_resource,
+)
+from modern_gopher.core.types import GopherItemType, parse_gopher_directory
 from modern_gopher.core.url import parse_gopher_url
 
 # Known public Gopher servers for testing
-TEST_SERVERS = [
-    "gopher.floodgap.com",
-    "gopher.black",
-    "zaibatsu.circumlunar.space"
-]
+TEST_SERVERS = ["gopher.floodgap.com", "gopher.black", "zaibatsu.circumlunar.space"]
 
 
-def check_server_accessible(
-        host: str,
-        port: int = 70,
-        timeout: int = 5) -> bool:
+def check_server_accessible(host: str, port: int = 70, timeout: int = 5) -> bool:
     """Check if a Gopher server is accessible."""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,8 +84,7 @@ class TestRealGopherConnections:
 
             if text_item:
                 # Fetch the text file
-                content = client.fetch_text(
-                    text_item.host, text_item.selector, text_item.port)
+                content = client.fetch_text(text_item.host, text_item.selector, text_item.port)
 
                 assert isinstance(content, str)
                 assert len(content) > 0
@@ -103,6 +96,7 @@ class TestRealGopherConnections:
         server = get_accessible_server()
 
         import tempfile
+
         with tempfile.TemporaryDirectory() as cache_dir:
             client = GopherClient(timeout=10, cache_dir=cache_dir)
 
@@ -155,8 +149,7 @@ class TestRealGopherConnections:
         # Try to fetch a non-existent resource
         # Some servers might return an error message instead of failing
         try:
-            result = client.fetch_text(
-                server, "/nonexistent/file/that/should/not/exist.txt")
+            result = client.fetch_text(server, "/nonexistent/file/that/should/not/exist.txt")
             # If we get here, the server returned something (maybe an error
             # message)
             assert isinstance(result, str)

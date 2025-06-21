@@ -10,11 +10,10 @@ import os
 import sys
 import unittest
 
-from modern_gopher.content.html_renderer import HTMLRenderer
-from modern_gopher.content.html_renderer import render_html_to_text
+from modern_gopher.content.html_renderer import HTMLRenderer, render_html_to_text
 
 # Add the src directory to the path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 class TestHTMLRenderer(unittest.TestCase):
@@ -66,11 +65,11 @@ class TestHTMLRenderer(unittest.TestCase):
 
         # Check link extraction
         self.assertEqual(len(links), 2)
-        self.assertEqual(links[0]['url'], 'gopher://example.com')
-        self.assertEqual(links[0]['text'], 'Example Gopher')
-        self.assertEqual(links[1]['url'], 'https://web.example.com')
-        self.assertEqual(links[1]['text'], 'Example Web')
-        self.assertEqual(links[1]['title'], 'Web Site')
+        self.assertEqual(links[0]["url"], "gopher://example.com")
+        self.assertEqual(links[0]["text"], "Example Gopher")
+        self.assertEqual(links[1]["url"], "https://web.example.com")
+        self.assertEqual(links[1]["text"], "Example Web")
+        self.assertEqual(links[1]["title"], "Web Site")
 
         # Check link numbering in rendered text
         self.assertIn("Example Gopher[1]", rendered)
@@ -241,9 +240,9 @@ class TestHTMLRenderer(unittest.TestCase):
         links = self.renderer.extract_links_only(html)
 
         self.assertEqual(len(links), 2)
-        self.assertEqual(links[0]['url'], 'gopher://test1.com')
-        self.assertEqual(links[0]['text'], 'Link 1')
-        self.assertEqual(links[1]['title'], 'Test')
+        self.assertEqual(links[0]["url"], "gopher://test1.com")
+        self.assertEqual(links[0]["text"], "Link 1")
+        self.assertEqual(links[1]["title"], "Test")
 
     def test_clean_text(self):
         """Test text cleaning functionality."""
@@ -304,28 +303,28 @@ class TestHTMLDetection(unittest.TestCase):
 
     def test_html_detection_by_doctype(self):
         """Test HTML detection by DOCTYPE."""
-        html = '<!DOCTYPE html><html><body><p>Test</p></body></html>'
+        html = "<!DOCTYPE html><html><body><p>Test</p></body></html>"
 
-        is_html = ('<!doctype html' in html.lower() or
-                   '<html' in html.lower() or
-                   '<body' in html.lower())
+        is_html = (
+            "<!doctype html" in html.lower() or "<html" in html.lower() or "<body" in html.lower()
+        )
 
         self.assertTrue(is_html)
 
     def test_html_detection_by_tags(self):
         """Test HTML detection by common tags."""
-        html_with_body = '<body><p>Test</p></body>'
-        html_with_html = '<html><p>Test</p></html>'
-        plain_text = 'This is just plain text'
+        html_with_body = "<body><p>Test</p></body>"
+        html_with_html = "<html><p>Test</p></html>"
+        plain_text = "This is just plain text"
 
         # Test positive cases
-        self.assertTrue('<body' in html_with_body.lower())
-        self.assertTrue('<html' in html_with_html.lower())
+        self.assertTrue("<body" in html_with_body.lower())
+        self.assertTrue("<html" in html_with_html.lower())
 
         # Test negative case
-        self.assertFalse('<html' in plain_text.lower())
-        self.assertFalse('<body' in plain_text.lower())
+        self.assertFalse("<html" in plain_text.lower())
+        self.assertFalse("<body" in plain_text.lower())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

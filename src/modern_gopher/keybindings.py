@@ -11,35 +11,32 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class KeyContext(Enum):
     """Context in which keybindings are active."""
-    GLOBAL = "global"           # Active everywhere
-    BROWSER = "browser"         # Active in browser interface
-    DIRECTORY = "directory"     # Active when browsing directories
-    CONTENT = "content"         # Active when viewing content
-    DIALOG = "dialog"           # Active in dialogs
-    SEARCH = "search"           # Active during search
+
+    GLOBAL = "global"  # Active everywhere
+    BROWSER = "browser"  # Active in browser interface
+    DIRECTORY = "directory"  # Active when browsing directories
+    CONTENT = "content"  # Active when viewing content
+    DIALOG = "dialog"  # Active in dialogs
+    SEARCH = "search"  # Active during search
 
 
 @dataclass
 class KeyBinding:
     """Represents a single key binding."""
-    action: str                    # Action name (e.g., 'quit', 'refresh')
-    keys: List[str]               # Key combinations (e.g., ['q', 'ctrl+c'])
-    context: KeyContext           # Context where binding is active
-    description: str              # Human-readable description
-    category: str = "general"     # Category for organization
-    enabled: bool = True          # Whether binding is enabled
+
+    action: str  # Action name (e.g., 'quit', 'refresh')
+    keys: List[str]  # Key combinations (e.g., ['q', 'ctrl+c'])
+    context: KeyContext  # Context where binding is active
+    description: str  # Human-readable description
+    category: str = "general"  # Category for organization
+    enabled: bool = True  # Whether binding is enabled
 
     def __post_init__(self):
         """Normalize key representations."""
@@ -52,19 +49,19 @@ class KeyBinding:
         key = key.lower().strip()
 
         # Normalize modifier keys
-        key = key.replace('ctrl+', 'c-')
-        key = key.replace('alt+', 'a-')
-        key = key.replace('shift+', 's-')
-        key = key.replace('cmd+', 'm-')  # For macOS
+        key = key.replace("ctrl+", "c-")
+        key = key.replace("alt+", "a-")
+        key = key.replace("shift+", "s-")
+        key = key.replace("cmd+", "m-")  # For macOS
 
         # Normalize special keys
         aliases = {
-            'return': 'enter',
-            'esc': 'escape',
-            'del': 'delete',
-            'pgup': 'pageup',
-            'pgdn': 'pagedown',
-            'pgdown': 'pagedown',
+            "return": "enter",
+            "esc": "escape",
+            "del": "delete",
+            "pgup": "pageup",
+            "pgdn": "pagedown",
+            "pgdown": "pagedown",
         }
 
         for alias, canonical in aliases.items():
@@ -74,11 +71,13 @@ class KeyBinding:
 
         return key
 
-    def conflicts_with(self, other: 'KeyBinding') -> bool:
+    def conflicts_with(self, other: "KeyBinding") -> bool:
         """Check if this binding conflicts with another."""
-        if self.context != other.context and \
-           self.context != KeyContext.GLOBAL and \
-           other.context != KeyContext.GLOBAL:
+        if (
+            self.context != other.context
+            and self.context != KeyContext.GLOBAL
+            and other.context != KeyContext.GLOBAL
+        ):
             return False
 
         # Check for overlapping keys
@@ -111,8 +110,8 @@ class KeyBindingManager:
     @staticmethod
     def get_default_config_path() -> Path:
         """Get the default keybinding configuration file path."""
-        config_dir = Path.home() / '.config' / 'modern-gopher'
-        return config_dir / 'keybindings.json'
+        config_dir = Path.home() / ".config" / "modern-gopher"
+        return config_dir / "keybindings.json"
 
     def _setup_default_bindings(self) -> None:
         """Set up default keybindings."""
@@ -123,131 +122,125 @@ class KeyBindingManager:
                 keys=["q", "c-c"],
                 context=KeyContext.GLOBAL,
                 description="Quit the application",
-                category="global"
+                category="global",
             ),
             KeyBinding(
                 action="help",
                 keys=["h", "f1"],
                 context=KeyContext.GLOBAL,
                 description="Show help information",
-                category="global"
+                category="global",
             ),
-
             # Browser navigation
             KeyBinding(
                 action="navigate_up",
                 keys=["up", "k"],
                 context=KeyContext.BROWSER,
                 description="Move selection up",
-                category="navigation"
+                category="navigation",
             ),
             KeyBinding(
                 action="navigate_down",
                 keys=["down", "j"],
                 context=KeyContext.BROWSER,
                 description="Move selection down",
-                category="navigation"
+                category="navigation",
             ),
             KeyBinding(
                 action="open_item",
                 keys=["enter", "right", "l"],
                 context=KeyContext.BROWSER,
                 description="Open selected item",
-                category="navigation"
+                category="navigation",
             ),
             KeyBinding(
                 action="go_back",
                 keys=["backspace", "left"],
                 context=KeyContext.BROWSER,
                 description="Go back in history",
-                category="navigation"
+                category="navigation",
             ),
             KeyBinding(
                 action="go_forward",
                 keys=["a-right"],
                 context=KeyContext.BROWSER,
                 description="Go forward in history",
-                category="navigation"
+                category="navigation",
             ),
             KeyBinding(
                 action="refresh",
                 keys=["r", "f5"],
                 context=KeyContext.BROWSER,
                 description="Refresh current page",
-                category="browser"
+                category="browser",
             ),
             KeyBinding(
                 action="go_home",
                 keys=["home"],
                 context=KeyContext.BROWSER,
                 description="Go to home/default URL",
-                category="navigation"
+                category="navigation",
             ),
-
             # Bookmark management
             KeyBinding(
                 action="bookmark_toggle",
                 keys=["b", "c-b"],
                 context=KeyContext.BROWSER,
                 description="Toggle bookmark for current URL",
-                category="bookmarks"
+                category="bookmarks",
             ),
             KeyBinding(
                 action="bookmark_list",
                 keys=["m"],
                 context=KeyContext.BROWSER,
                 description="Show bookmarks list",
-                category="bookmarks"
+                category="bookmarks",
             ),
-
             # History
             KeyBinding(
                 action="history_show",
                 keys=["c-h"],
                 context=KeyContext.BROWSER,
                 description="Show browsing history",
-                category="history"
+                category="history",
             ),
-
             # URL navigation
             KeyBinding(
                 action="go_to_url",
                 keys=["g", "c-l"],
                 context=KeyContext.BROWSER,
                 description="Open URL input dialog",
-                category="navigation"
+                category="navigation",
             ),
-
             # Search
             KeyBinding(
                 action="search_directory",
                 keys=["/", "c-f"],
                 context=KeyContext.DIRECTORY,
                 description="Search within current directory",
-                category="search"
+                category="search",
             ),
             KeyBinding(
                 action="search_clear",
                 keys=["escape"],
                 context=KeyContext.SEARCH,
                 description="Clear search and exit search mode",
-                category="search"
+                category="search",
             ),
-
             # Content viewing
             KeyBinding(
                 action="scroll_up",
                 keys=["pageup", "c-b"],
                 context=KeyContext.CONTENT,
                 description="Scroll content up",
-                category="content"
+                category="content",
             ),
             KeyBinding(
                 action="scroll_down",
                 keys=["pagedown", "c-f", "space"],
                 context=KeyContext.CONTENT,
                 description="Scroll content down",
-                category="content"
+                category="content",
             ),
         ]
 
@@ -268,7 +261,8 @@ class KeyBindingManager:
         if conflicts:
             logger.warning(
                 f"Keybinding conflicts found for {
-                    binding.action}: {conflicts}")
+                    binding.action}: {conflicts}"
+            )
             return False
 
         # Add binding
@@ -326,10 +320,7 @@ class KeyBindingManager:
 
         return conflicts
 
-    def get_action_for_key(
-            self,
-            key: str,
-            context: KeyContext) -> Optional[str]:
+    def get_action_for_key(self, key: str, context: KeyContext) -> Optional[str]:
         """Get the action for a key in a given context.
 
         Args:
@@ -384,7 +375,7 @@ class KeyBindingManager:
             keys=keys,
             context=binding.context,
             description=binding.description,
-            category=binding.category
+            category=binding.category,
         )
 
         # Remove current binding temporarily
@@ -440,18 +431,15 @@ class KeyBindingManager:
         # Check for conflicts if currently disabled
         if not binding.enabled:
             # Create a copy to check conflicts without self-conflict
-            temp_bindings = {k: v for k,
-                             v in self.bindings.items() if k != action}
+            temp_bindings = {k: v for k, v in self.bindings.items() if k != action}
             conflicts = []
 
             for existing_action, existing_binding in temp_bindings.items():
-                if existing_binding.enabled and existing_binding.conflicts_with(
-                        binding):
+                if existing_binding.enabled and existing_binding.conflicts_with(binding):
                     conflicts.append(existing_action)
 
             if conflicts:
-                logger.warning(
-                    f"Cannot enable {action}: conflicts with {conflicts}")
+                logger.warning(f"Cannot enable {action}: conflicts with {conflicts}")
                 return False
 
             # Re-add to key-to-action mapping
@@ -479,8 +467,7 @@ class KeyBindingManager:
             if binding.category == category
         }
 
-    def get_bindings_by_context(
-            self, context: KeyContext) -> Dict[str, KeyBinding]:
+    def get_bindings_by_context(self, context: KeyContext) -> Dict[str, KeyBinding]:
         """Get all bindings for a context.
 
         Args:
@@ -520,14 +507,14 @@ class KeyBindingManager:
                 return False
 
             # Check for valid modifiers
-            if '-' in normalized:
-                parts = normalized.split('-')
+            if "-" in normalized:
+                parts = normalized.split("-")
                 # Only allow one modifier (should be exactly 2 parts)
                 if len(parts) != 2:
                     return False
 
                 modifier, key_part = parts
-                valid_modifiers = {'c', 'a', 's', 'm'}  # ctrl, alt, shift, cmd
+                valid_modifiers = {"c", "a", "s", "m"}  # ctrl, alt, shift, cmd
                 if modifier not in valid_modifiers:
                     return False
 
@@ -536,7 +523,7 @@ class KeyBindingManager:
                     return False
 
             # Reject keys with multiple + signs (not normalized properly)
-            if '+' in key:
+            if "+" in key:
                 return False
 
             return True
@@ -552,11 +539,11 @@ class KeyBindingManager:
         """
         return {
             action: {
-                'keys': binding.keys,
-                'context': binding.context.value,
-                'description': binding.description,
-                'category': binding.category,
-                'enabled': binding.enabled
+                "keys": binding.keys,
+                "context": binding.context.value,
+                "description": binding.description,
+                "category": binding.category,
+                "enabled": binding.enabled,
             }
             for action, binding in self.bindings.items()
         }
@@ -574,11 +561,11 @@ class KeyBindingManager:
             try:
                 binding = KeyBinding(
                     action=action,
-                    keys=binding_data['keys'],
-                    context=KeyContext(binding_data['context']),
-                    description=binding_data['description'],
-                    category=binding_data.get('category', 'general'),
-                    enabled=binding_data.get('enabled', True)
+                    keys=binding_data["keys"],
+                    context=KeyContext(binding_data["context"]),
+                    description=binding_data["description"],
+                    category=binding_data.get("category", "general"),
+                    enabled=binding_data.get("enabled", True),
                 )
 
                 if binding.enabled:
@@ -604,7 +591,7 @@ class KeyBindingManager:
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(self.to_dict(), f, indent=2, sort_keys=True)
 
             logger.info(f"Keybindings saved to {file_path}")
@@ -630,7 +617,7 @@ class KeyBindingManager:
             return False
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             self.from_dict(data)
@@ -658,8 +645,8 @@ class KeyBindingManager:
         """
         if backup_path is None:
             import time
+
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            backup_path = self.config_file.parent / \
-                f"keybindings_backup_{timestamp}.json"
+            backup_path = self.config_file.parent / f"keybindings_backup_{timestamp}.json"
 
         return self.save_to_file(backup_path)

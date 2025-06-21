@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Plugin system architecture
+- Enhanced browser features (tabs, split-pane)
+- Advanced search functionality
+
+## [1.2.0] - 2025-06-21
+
 ### Added
 - GitHub Actions CI/CD pipeline
 - Modern pyproject.toml configuration
@@ -14,10 +21,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code formatting with black and isort
 - Type checking with mypy
 - Coverage reporting integration
+- Shell debugging tools for development
+- Enhanced error handling and user feedback
 
 ### Changed
+- **BREAKING**: Increased default connection timeout from 30 to 60 seconds
 - Improved repository organization and .gitignore
 - Updated development workflows
+- Enhanced session management with better timeout handling
+- Improved configuration validation and loading
+
+### Fixed
+- Shell script argument parsing (zsh parse error resolution)
+- Connection timeout issues with slow servers
+- Broken session data cleanup
+- Shell script parameter handling in test commands
+- All linting errors (E501 line length violations)
+- Import cleanup across codebase
+
+### Technical
+- **250 tests passing** with comprehensive coverage
+- All core functionality verified and stable
+- Shell script syntax validation complete
+- Code quality improvements across the board
 
 ## [0.2.0] - 2025-06-17
 

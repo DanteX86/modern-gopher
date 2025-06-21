@@ -6,15 +6,12 @@ This test suite covers the GopherBrowser class and HistoryManager
 to improve test coverage from 16% to 60%+.
 """
 
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from modern_gopher.browser.terminal import GopherBrowser
-from modern_gopher.browser.terminal import HistoryManager
-from modern_gopher.core.types import GopherItem
-from modern_gopher.core.types import GopherItemType
+from modern_gopher.browser.terminal import GopherBrowser, HistoryManager
+from modern_gopher.core.types import GopherItem, GopherItemType
 
 
 class TestHistoryManager:
@@ -170,11 +167,10 @@ class TestHistoryManager:
 class TestGopherBrowser:
     """Test the GopherBrowser class."""
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_browser_initialization_defaults(
-            self, mock_bookmarks, mock_client, mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_browser_initialization_defaults(self, mock_bookmarks, mock_client, mock_get_config):
         """Test browser initialization with default values."""
         # Mock config
         mock_config = Mock()
@@ -194,11 +190,12 @@ class TestGopherBrowser:
         assert isinstance(browser.history, HistoryManager)
         mock_client.assert_called_once()
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
     def test_browser_initialization_custom_values(
-            self, mock_bookmarks, mock_client, mock_get_config):
+        self, mock_bookmarks, mock_client, mock_get_config
+    ):
         """Test browser initialization with custom values."""
         # Mock config
         mock_config = Mock()
@@ -209,25 +206,17 @@ class TestGopherBrowser:
         mock_get_config.return_value = mock_config
 
         browser = GopherBrowser(
-            initial_url="gopher://custom.com",
-            timeout=60,
-            use_ssl=True,
-            cache_dir="/custom/cache"
+            initial_url="gopher://custom.com", timeout=60, use_ssl=True, cache_dir="/custom/cache"
         )
 
         assert browser.current_url == "gopher://custom.com"
         assert browser.use_ssl is True
-        mock_client.assert_called_with(
-            timeout=60,
-            cache_dir="/custom/cache",
-            use_ipv6=None
-        )
+        mock_client.assert_called_with(timeout=60, cache_dir="/custom/cache", use_ipv6=None)
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_browser_uses_config_initial_url(
-            self, mock_bookmarks, mock_client, mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_browser_uses_config_initial_url(self, mock_bookmarks, mock_client, mock_get_config):
         """Test that browser uses config initial URL when default is provided."""
         mock_config = Mock()
         mock_config.initial_url = "gopher://config-default.com"
@@ -243,35 +232,29 @@ class TestGopherBrowser:
 
     def test_get_item_icon(self):
         """Test getting icons for different item types."""
-        with patch('modern_gopher.browser.terminal.get_config'), \
-                patch('modern_gopher.browser.terminal.GopherClient'), \
-                patch('modern_gopher.browser.terminal.BookmarkManager'):
+        with patch("modern_gopher.browser.terminal.get_config"), patch(
+            "modern_gopher.browser.terminal.GopherClient"
+        ), patch("modern_gopher.browser.terminal.BookmarkManager"):
 
             browser = GopherBrowser()
 
             # Test various item types
-            assert browser.get_item_icon(GopherItemType.TEXT_FILE) in [
-                "📄", "[TXT]"]
-            assert browser.get_item_icon(GopherItemType.DIRECTORY) in [
-                "📁", "[DIR]"]
-            assert browser.get_item_icon(
-                GopherItemType.BINARY_FILE) in [
-                "📎", "[BIN]"]
-            assert browser.get_item_icon(GopherItemType.GIF_IMAGE) in [
-                "🖼️", "[IMG]"]
+            assert browser.get_item_icon(GopherItemType.TEXT_FILE) in ["📄", "[TXT]"]
+            assert browser.get_item_icon(GopherItemType.DIRECTORY) in ["📁", "[DIR]"]
+            assert browser.get_item_icon(GopherItemType.BINARY_FILE) in ["📎", "[BIN]"]
+            assert browser.get_item_icon(GopherItemType.GIF_IMAGE) in ["🖼️", "[IMG]"]
             assert browser.get_item_icon(GopherItemType.HTML) in ["🌐", "[HTM]"]
 
     def test_format_display_string(self):
         """Test formatting display strings."""
-        with patch('modern_gopher.browser.terminal.get_config'), \
-                patch('modern_gopher.browser.terminal.GopherClient'), \
-                patch('modern_gopher.browser.terminal.BookmarkManager'):
+        with patch("modern_gopher.browser.terminal.get_config"), patch(
+            "modern_gopher.browser.terminal.GopherClient"
+        ), patch("modern_gopher.browser.terminal.BookmarkManager"):
 
             browser = GopherBrowser()
 
             # Test normal text
-            assert browser.format_display_string(
-                "Hello World") == "Hello World"
+            assert browser.format_display_string("Hello World") == "Hello World"
 
             # Test long text truncation
             long_text = "A" * 200
@@ -279,9 +262,9 @@ class TestGopherBrowser:
             assert len(formatted) <= 53  # 50 + "..."
             assert formatted.endswith("...")
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
     def test_update_status(self, mock_bookmarks, mock_client, mock_get_config):
         """Test status bar updates."""
         mock_config = Mock()
@@ -305,14 +288,10 @@ class TestGopherBrowser:
         # Status should include position info
         assert "2/3" in browser.status_bar.text or "Browsing" in browser.status_bar.text
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_bookmark_toggle_add(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_bookmark_toggle_add(self, mock_bookmarks, mock_client, mock_get_config):
         """Test adding a bookmark."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -334,14 +313,10 @@ class TestGopherBrowser:
         mock_bm.add.assert_called_once()
         assert "Bookmark added" in browser.status_bar.text
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_bookmark_toggle_remove(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_bookmark_toggle_remove(self, mock_bookmarks, mock_client, mock_get_config):
         """Test removing a bookmark."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -363,14 +338,10 @@ class TestGopherBrowser:
         mock_bm.remove.assert_called_with("gopher://example.com")
         assert "Bookmark removed" in browser.status_bar.text
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_show_history_empty(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_show_history_empty(self, mock_bookmarks, mock_client, mock_get_config):
         """Test showing empty history."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -385,14 +356,10 @@ class TestGopherBrowser:
 
         assert "No browsing history" in browser.status_bar.text
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_show_history_with_items(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_show_history_with_items(self, mock_bookmarks, mock_client, mock_get_config):
         """Test showing history with items."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -413,14 +380,10 @@ class TestGopherBrowser:
         assert "gopher://test.com" in content
         assert "(current)" in content
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_show_bookmarks_empty(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_show_bookmarks_empty(self, mock_bookmarks, mock_client, mock_get_config):
         """Test showing empty bookmarks."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -439,14 +402,10 @@ class TestGopherBrowser:
 
         assert "No bookmarks saved" in browser.status_bar.text
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_show_bookmarks_with_items(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_show_bookmarks_with_items(self, mock_bookmarks, mock_client, mock_get_config):
         """Test showing bookmarks with items."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -477,14 +436,10 @@ class TestGopherBrowser:
         assert "A test site" in content
         assert "test, example" in content
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_url_validator_creation(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_url_validator_creation(self, mock_bookmarks, mock_client, mock_get_config):
         """Test URL validator creation."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -498,16 +453,12 @@ class TestGopherBrowser:
         validator = browser._url_validator()
 
         assert validator is not None
-        assert hasattr(validator, 'validate')
+        assert hasattr(validator, "validate")
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_get_menu_text_empty(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_get_menu_text_empty(self, mock_bookmarks, mock_client, mock_get_config):
         """Test getting menu text with no items."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -523,14 +474,10 @@ class TestGopherBrowser:
         menu_text = browser.get_menu_text()
         assert menu_text == []
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_get_menu_text_with_items(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_get_menu_text_with_items(self, mock_bookmarks, mock_client, mock_get_config):
         """Test getting menu text with items."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -541,18 +488,8 @@ class TestGopherBrowser:
         mock_get_config.return_value = mock_config
 
         # Create mock items
-        item1 = GopherItem(
-            GopherItemType.TEXT_FILE,
-            "Test File",
-            "/test.txt",
-            "example.com",
-            70)
-        item2 = GopherItem(
-            GopherItemType.DIRECTORY,
-            "Test Dir",
-            "/test",
-            "example.com",
-            70)
+        item1 = GopherItem(GopherItemType.TEXT_FILE, "Test File", "/test.txt", "example.com", 70)
+        item2 = GopherItem(GopherItemType.DIRECTORY, "Test Dir", "/test", "example.com", 70)
 
         browser = GopherBrowser()
         browser.current_items = [item1, item2]
@@ -562,20 +499,16 @@ class TestGopherBrowser:
 
         assert len(menu_text) == 2
         # First item should be selected
-        assert menu_text[0][0] == 'class:menu.selection'
+        assert menu_text[0][0] == "class:menu.selection"
         assert "Test File" in menu_text[0][1]
         # Second item should not be selected
-        assert menu_text[1][0] == ''
+        assert menu_text[1][0] == ""
         assert "Test Dir" in menu_text[1][1]
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_search_functionality_basic(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_search_functionality_basic(self, mock_bookmarks, mock_client, mock_get_config):
         """Test basic search functionality."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -594,22 +527,22 @@ class TestGopherBrowser:
                 display_string="Documentation",
                 selector="/docs",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="README.txt",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="License File",
                 selector="/license",
                 host="example.com",
-                port=70
-            )
+                port=70,
+            ),
         ]
 
         browser.current_items = items
@@ -625,11 +558,12 @@ class TestGopherBrowser:
         assert browser.search_query == "doc"
         assert len(browser.filtered_items) == 3  # Original items preserved
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
     def test_search_functionality_case_insensitive(
-            self, mock_bookmarks, mock_client, mock_get_config):
+        self, mock_bookmarks, mock_client, mock_get_config
+    ):
         """Test that search is case insensitive."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -647,15 +581,15 @@ class TestGopherBrowser:
                 display_string="README.TXT",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="license file",
                 selector="/license",
                 host="example.com",
-                port=70
-            )
+                port=70,
+            ),
         ]
 
         browser.current_items = items
@@ -667,11 +601,12 @@ class TestGopherBrowser:
         assert len(browser.current_items) == 1
         assert browser.current_items[0].display_string == "README.TXT"
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
     def test_search_functionality_selector_matching(
-            self, mock_bookmarks, mock_client, mock_get_config):
+        self, mock_bookmarks, mock_client, mock_get_config
+    ):
         """Test that search matches both display string and selector."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -689,15 +624,15 @@ class TestGopherBrowser:
                 display_string="Important Document",
                 selector="/hidden/secret.txt",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="Public File",
                 selector="/public.txt",
                 host="example.com",
-                port=70
-            )
+                port=70,
+            ),
         ]
 
         browser.current_items = items
@@ -709,11 +644,10 @@ class TestGopherBrowser:
         assert len(browser.current_items) == 1
         assert browser.current_items[0].display_string == "Important Document"
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_search_functionality_no_results(
-            self, mock_bookmarks, mock_client, mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_search_functionality_no_results(self, mock_bookmarks, mock_client, mock_get_config):
         """Test search with no matching results."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -731,7 +665,7 @@ class TestGopherBrowser:
                 display_string="README.txt",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             )
         ]
 
@@ -745,11 +679,10 @@ class TestGopherBrowser:
         assert browser.is_searching is True
         assert len(browser.filtered_items) == 1  # Original items preserved
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_search_functionality_empty_query(
-            self, mock_bookmarks, mock_client, mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_search_functionality_empty_query(self, mock_bookmarks, mock_client, mock_get_config):
         """Test search with empty query clears search."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -767,7 +700,7 @@ class TestGopherBrowser:
                 display_string="README.txt",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             )
         ]
 
@@ -783,14 +716,10 @@ class TestGopherBrowser:
         assert browser.search_query == ""
         assert len(browser.filtered_items) == 0
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_clear_search_functionality(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_clear_search_functionality(self, mock_bookmarks, mock_client, mock_get_config):
         """Test clearing search restores original items."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -808,15 +737,15 @@ class TestGopherBrowser:
                 display_string="README.txt",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="License",
                 selector="/license",
                 host="example.com",
-                port=70
-            )
+                port=70,
+            ),
         ]
 
         # Set up search state
@@ -837,11 +766,10 @@ class TestGopherBrowser:
         assert len(browser.filtered_items) == 0
         assert browser.selected_index == 0
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_clear_search_when_not_searching(
-            self, mock_bookmarks, mock_client, mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_clear_search_when_not_searching(self, mock_bookmarks, mock_client, mock_get_config):
         """Test clearing search when not currently searching."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -859,7 +787,7 @@ class TestGopherBrowser:
                 display_string="README.txt",
                 selector="/readme.txt",
                 host="example.com",
-                port=70
+                port=70,
             )
         ]
 
@@ -872,14 +800,10 @@ class TestGopherBrowser:
         assert len(browser.current_items) == 1
         assert browser.is_searching is False
 
-    @patch('modern_gopher.browser.terminal.get_config')
-    @patch('modern_gopher.browser.terminal.GopherClient')
-    @patch('modern_gopher.browser.terminal.BookmarkManager')
-    def test_consecutive_searches(
-            self,
-            mock_bookmarks,
-            mock_client,
-            mock_get_config):
+    @patch("modern_gopher.browser.terminal.get_config")
+    @patch("modern_gopher.browser.terminal.GopherClient")
+    @patch("modern_gopher.browser.terminal.BookmarkManager")
+    def test_consecutive_searches(self, mock_bookmarks, mock_client, mock_get_config):
         """Test performing multiple consecutive searches."""
         mock_config = Mock()
         mock_config.initial_url = None
@@ -897,22 +821,22 @@ class TestGopherBrowser:
                 display_string="Documents",
                 selector="/docs",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="Document 1",
                 selector="/doc1.txt",
                 host="example.com",
-                port=70
+                port=70,
             ),
             GopherItem(
                 item_type=GopherItemType.TEXT_FILE,
                 display_string="File Archive",
                 selector="/archive.zip",
                 host="example.com",
-                port=70
-            )
+                port=70,
+            ),
         ]
 
         browser.current_items = items

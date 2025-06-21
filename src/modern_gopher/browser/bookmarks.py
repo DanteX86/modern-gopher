@@ -9,16 +9,14 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
-from typing import List
-from typing import NamedTuple
-from typing import Optional
+from typing import Dict, List, NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class Bookmark(NamedTuple):
     """Represents a single bookmark entry."""
+
     url: str
     title: str
     description: str = ""
@@ -30,26 +28,26 @@ class Bookmark(NamedTuple):
     def to_dict(self) -> Dict:
         """Convert bookmark to dictionary for JSON serialization."""
         return {
-            'url': self.url,
-            'title': self.title,
-            'description': self.description,
-            'tags': list(self.tags),
-            'created_at': self.created_at,
-            'last_visited': self.last_visited,
-            'visit_count': self.visit_count
+            "url": self.url,
+            "title": self.title,
+            "description": self.description,
+            "tags": list(self.tags),
+            "created_at": self.created_at,
+            "last_visited": self.last_visited,
+            "visit_count": self.visit_count,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'Bookmark':
+    def from_dict(cls, data: Dict) -> "Bookmark":
         """Create bookmark from dictionary."""
         return cls(
-            url=data.get('url', ''),
-            title=data.get('title', ''),
-            description=data.get('description', ''),
-            tags=data.get('tags', []),
-            created_at=data.get('created_at', ''),
-            last_visited=data.get('last_visited', ''),
-            visit_count=data.get('visit_count', 0)
+            url=data.get("url", ""),
+            title=data.get("title", ""),
+            description=data.get("description", ""),
+            tags=data.get("tags", []),
+            created_at=data.get("created_at", ""),
+            last_visited=data.get("last_visited", ""),
+            visit_count=data.get("visit_count", 0),
         )
 
 
@@ -65,9 +63,9 @@ class BookmarkManager:
         """
         if bookmarks_file is None:
             # Use standard config directory
-            config_dir = Path.home() / '.config' / 'modern-gopher'
+            config_dir = Path.home() / ".config" / "modern-gopher"
             config_dir.mkdir(parents=True, exist_ok=True)
-            self.bookmarks_file = config_dir / 'bookmarks.json'
+            self.bookmarks_file = config_dir / "bookmarks.json"
         else:
             self.bookmarks_file = Path(bookmarks_file)
 
@@ -78,15 +76,15 @@ class BookmarkManager:
         """Load bookmarks from file."""
         try:
             if self.bookmarks_file.exists():
-                with open(self.bookmarks_file, 'r', encoding='utf-8') as f:
+                with open(self.bookmarks_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._bookmarks = {
                         url: Bookmark.from_dict(bookmark_data)
                         for url, bookmark_data in data.items()
                     }
                 logger.debug(
-                    f"Loaded {len(self._bookmarks)} bookmarks from "
-                    f"{self.bookmarks_file}")
+                    f"Loaded {len(self._bookmarks)} bookmarks from " f"{self.bookmarks_file}"
+                )
             else:
                 # Create with some default bookmarks
                 self._create_default_bookmarks()
@@ -100,15 +98,10 @@ class BookmarkManager:
             # Ensure directory exists
             self.bookmarks_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(self.bookmarks_file, 'w', encoding='utf-8') as f:
-                data = {
-                    url: bookmark.to_dict()
-                    for url, bookmark in self._bookmarks.items()
-                }
+            with open(self.bookmarks_file, "w", encoding="utf-8") as f:
+                data = {url: bookmark.to_dict() for url, bookmark in self._bookmarks.items()}
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            logger.debug(
-                f"Saved {len(self._bookmarks)} bookmarks to "
-                f"{self.bookmarks_file}")
+            logger.debug(f"Saved {len(self._bookmarks)} bookmarks to " f"{self.bookmarks_file}")
         except Exception as e:
             logger.error(f"Error saving bookmarks: {e}")
 
@@ -118,32 +111,31 @@ class BookmarkManager:
             Bookmark(
                 url="gopher://gopher.floodgap.com",
                 title="Floodgap Gopher Server",
-                description=(
-                    "One of the most popular and well-maintained Gopher servers"),
+                description=("One of the most popular and well-maintained Gopher servers"),
                 tags=["popular", "reference"],
-                created_at=datetime.now().isoformat()
+                created_at=datetime.now().isoformat(),
             ),
             Bookmark(
                 url="gopher://sdf.org",
                 title="SDF Public Access UNIX System",
                 description="Historic public access UNIX system with Gopher presence",
                 tags=["historic", "unix"],
-                created_at=datetime.now().isoformat()
+                created_at=datetime.now().isoformat(),
             ),
             Bookmark(
                 url="gopher://circumlunar.space",
                 title="Circumlunar Space",
                 description="Modern Gopher community hub",
                 tags=["community", "modern"],
-                created_at=datetime.now().isoformat()
+                created_at=datetime.now().isoformat(),
             ),
             Bookmark(
                 url="gopher://gopher.floodgap.com/7/v2/vs",
                 title="Veronica-2 Search",
                 description="Search engine for Gopherspace",
                 tags=["search", "tool"],
-                created_at=datetime.now().isoformat()
-            )
+                created_at=datetime.now().isoformat(),
+            ),
         ]
 
         for bookmark in default_bookmarks:
@@ -151,12 +143,7 @@ class BookmarkManager:
 
         self._save_bookmarks()
 
-    def add(
-            self,
-            url: str,
-            title: str = "",
-            description: str = "",
-            tags: List[str] = None) -> bool:
+    def add(self, url: str, title: str = "", description: str = "", tags: List[str] = None) -> bool:
         """Add a new bookmark.
 
         Args:
@@ -180,7 +167,7 @@ class BookmarkManager:
             description=description,
             tags=tags or [],
             created_at=datetime.now().isoformat(),
-            visit_count=0
+            visit_count=0,
         )
 
         self._bookmarks[url] = bookmark
@@ -221,7 +208,7 @@ class BookmarkManager:
         updated_data = old_bookmark.to_dict()
 
         # Update allowed fields
-        for field in ['title', 'description', 'tags']:
+        for field in ["title", "description", "tags"]:
             if field in kwargs:
                 updated_data[field] = kwargs[field]
 
@@ -305,7 +292,8 @@ class BookmarkManager:
         """
         tag_lower = tag.lower()
         return [
-            bookmark for bookmark in self._bookmarks.values()
+            bookmark
+            for bookmark in self._bookmarks.values()
             if any(t.lower() == tag_lower for t in bookmark.tags)
         ]
 
@@ -329,8 +317,8 @@ class BookmarkManager:
         if url in self._bookmarks:
             old_bookmark = self._bookmarks[url]
             updated_data = old_bookmark.to_dict()
-            updated_data['last_visited'] = datetime.now().isoformat()
-            updated_data['visit_count'] = old_bookmark.visit_count + 1
+            updated_data["last_visited"] = datetime.now().isoformat()
+            updated_data["visit_count"] = old_bookmark.visit_count + 1
 
             self._bookmarks[url] = Bookmark.from_dict(updated_data)
             self._save_bookmarks()
@@ -344,11 +332,7 @@ class BookmarkManager:
         Returns:
             List of most visited bookmarks
         """
-        return sorted(
-            self._bookmarks.values(),
-            key=lambda b: b.visit_count,
-            reverse=True
-        )[:limit]
+        return sorted(self._bookmarks.values(), key=lambda b: b.visit_count, reverse=True)[:limit]
 
     def get_recent(self, limit: int = 10) -> List[Bookmark]:
         """Get recently visited bookmarks.
@@ -362,11 +346,7 @@ class BookmarkManager:
         # Filter bookmarks that have been visited
         visited = [b for b in self._bookmarks.values() if b.last_visited]
 
-        return sorted(
-            visited,
-            key=lambda b: b.last_visited,
-            reverse=True
-        )[:limit]
+        return sorted(visited, key=lambda b: b.last_visited, reverse=True)[:limit]
 
     def import_bookmarks(self, file_path: str) -> int:
         """Import bookmarks from a JSON file.
@@ -378,7 +358,7 @@ class BookmarkManager:
             Number of bookmarks imported
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             imported_count = 0
@@ -390,8 +370,7 @@ class BookmarkManager:
             if imported_count > 0:
                 self._save_bookmarks()
 
-            logger.info(
-                f"Imported {imported_count} new bookmarks from {file_path}")
+            logger.info(f"Imported {imported_count} new bookmarks from {file_path}")
             return imported_count
 
         except Exception as e:
@@ -408,15 +387,11 @@ class BookmarkManager:
             True if export was successful
         """
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                data = {
-                    url: bookmark.to_dict()
-                    for url, bookmark in self._bookmarks.items()
-                }
+            with open(file_path, "w", encoding="utf-8") as f:
+                data = {url: bookmark.to_dict() for url, bookmark in self._bookmarks.items()}
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
-            logger.info(
-                f"Exported {len(self._bookmarks)} bookmarks to {file_path}")
+            logger.info(f"Exported {len(self._bookmarks)} bookmarks to {file_path}")
             return True
 
         except Exception as e:

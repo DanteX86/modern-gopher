@@ -9,9 +9,7 @@ import logging
 import mimetypes
 import os
 from enum import Enum
-from typing import List
-from typing import NamedTuple
-from typing import Optional
+from typing import List, NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,33 +18,33 @@ class GopherItemType(Enum):
     """Enum representing Gopher item types as specified in RFC 1436."""
 
     # Standard Gopher item types
-    TEXT_FILE = '0'
-    DIRECTORY = '1'
-    CSO_PHONE_BOOK = '2'
-    ERROR = '3'
-    BINHEX_FILE = '4'
-    DOS_BINARY = '5'
-    UUENCODED_FILE = '6'
-    SEARCH_SERVER = '7'
-    TELNET = '8'
-    BINARY_FILE = '9'
-    REDUNDANT_SERVER = '+'
+    TEXT_FILE = "0"
+    DIRECTORY = "1"
+    CSO_PHONE_BOOK = "2"
+    ERROR = "3"
+    BINHEX_FILE = "4"
+    DOS_BINARY = "5"
+    UUENCODED_FILE = "6"
+    SEARCH_SERVER = "7"
+    TELNET = "8"
+    BINARY_FILE = "9"
+    REDUNDANT_SERVER = "+"
 
     # Gopher+ and commonly used extensions
-    TN3270_SESSION = 'T'
-    GIF_IMAGE = 'g'
-    IMAGE_FILE = 'I'
-    SOUND_FILE = 's'
+    TN3270_SESSION = "T"
+    GIF_IMAGE = "g"
+    IMAGE_FILE = "I"
+    SOUND_FILE = "s"
 
     # Additional item types that are common in modern Gopher implementations
-    HTML = 'h'
-    INFORMATION = 'i'
-    DOCUMENT = 'd'
-    PDF = 'P'
-    CALENDAR = 'c'
+    HTML = "h"
+    INFORMATION = "i"
+    DOCUMENT = "d"
+    PDF = "P"
+    CALENDAR = "c"
 
     @classmethod
-    def from_char(cls, char: str) -> Optional['GopherItemType']:
+    def from_char(cls, char: str) -> Optional["GopherItemType"]:
         """
         Get the GopherItemType corresponding to a character identifier.
 
@@ -69,8 +67,7 @@ class GopherItemType(Enum):
         Returns:
             True if the item contains text content, False otherwise
         """
-        return self in (self.TEXT_FILE, self.DIRECTORY,
-                        self.ERROR, self.INFORMATION)
+        return self in (self.TEXT_FILE, self.DIRECTORY, self.ERROR, self.INFORMATION)
 
     @property
     def is_binary(self) -> bool:
@@ -80,10 +77,16 @@ class GopherItemType(Enum):
         Returns:
             True if the item contains binary content, False otherwise
         """
-        return self in (self.BINHEX_FILE, self.DOS_BINARY,
-                        self.UUENCODED_FILE, self.BINARY_FILE,
-                        self.GIF_IMAGE, self.IMAGE_FILE, self.SOUND_FILE,
-                        self.PDF)
+        return self in (
+            self.BINHEX_FILE,
+            self.DOS_BINARY,
+            self.UUENCODED_FILE,
+            self.BINARY_FILE,
+            self.GIF_IMAGE,
+            self.IMAGE_FILE,
+            self.SOUND_FILE,
+            self.PDF,
+        )
 
     @property
     def is_interactive(self) -> bool:
@@ -93,8 +96,7 @@ class GopherItemType(Enum):
         Returns:
             True if the item is interactive, False otherwise
         """
-        return self in (self.CSO_PHONE_BOOK, self.SEARCH_SERVER,
-                        self.TELNET, self.TN3270_SESSION)
+        return self in (self.CSO_PHONE_BOOK, self.SEARCH_SERVER, self.TELNET, self.TN3270_SESSION)
 
     @property
     def mime_type(self) -> str:
@@ -105,23 +107,23 @@ class GopherItemType(Enum):
             A string containing the MIME type
         """
         mime_map = {
-            self.TEXT_FILE: 'text/plain',
-            self.DIRECTORY: 'text/plain',
-            self.ERROR: 'text/plain',
-            self.INFORMATION: 'text/plain',
-            self.HTML: 'text/html',
-            self.BINHEX_FILE: 'application/mac-binhex40',
-            self.DOS_BINARY: 'application/octet-stream',
-            self.UUENCODED_FILE: 'text/x-uuencode',
-            self.BINARY_FILE: 'application/octet-stream',
-            self.GIF_IMAGE: 'image/gif',
-            self.IMAGE_FILE: 'image/unknown',
-            self.SOUND_FILE: 'audio/unknown',
-            self.PDF: 'application/pdf',
-            self.DOCUMENT: 'text/plain',
-            self.CALENDAR: 'text/calendar',
+            self.TEXT_FILE: "text/plain",
+            self.DIRECTORY: "text/plain",
+            self.ERROR: "text/plain",
+            self.INFORMATION: "text/plain",
+            self.HTML: "text/html",
+            self.BINHEX_FILE: "application/mac-binhex40",
+            self.DOS_BINARY: "application/octet-stream",
+            self.UUENCODED_FILE: "text/x-uuencode",
+            self.BINARY_FILE: "application/octet-stream",
+            self.GIF_IMAGE: "image/gif",
+            self.IMAGE_FILE: "image/unknown",
+            self.SOUND_FILE: "audio/unknown",
+            self.PDF: "application/pdf",
+            self.DOCUMENT: "text/plain",
+            self.CALENDAR: "text/calendar",
         }
-        return mime_map.get(self, 'application/octet-stream')
+        return mime_map.get(self, "application/octet-stream")
 
     @property
     def extension(self) -> str:
@@ -132,23 +134,23 @@ class GopherItemType(Enum):
             A string containing a file extension (with dot)
         """
         ext_map = {
-            self.TEXT_FILE: '.txt',
-            self.DIRECTORY: '.txt',
-            self.ERROR: '.txt',
-            self.INFORMATION: '.txt',
-            self.HTML: '.html',
-            self.BINHEX_FILE: '.hqx',
-            self.DOS_BINARY: '.bin',
-            self.UUENCODED_FILE: '.uue',
-            self.BINARY_FILE: '.bin',
-            self.GIF_IMAGE: '.gif',
-            self.IMAGE_FILE: '.img',
-            self.SOUND_FILE: '.snd',
-            self.PDF: '.pdf',
-            self.DOCUMENT: '.doc',
-            self.CALENDAR: '.ics',
+            self.TEXT_FILE: ".txt",
+            self.DIRECTORY: ".txt",
+            self.ERROR: ".txt",
+            self.INFORMATION: ".txt",
+            self.HTML: ".html",
+            self.BINHEX_FILE: ".hqx",
+            self.DOS_BINARY: ".bin",
+            self.UUENCODED_FILE: ".uue",
+            self.BINARY_FILE: ".bin",
+            self.GIF_IMAGE: ".gif",
+            self.IMAGE_FILE: ".img",
+            self.SOUND_FILE: ".snd",
+            self.PDF: ".pdf",
+            self.DOCUMENT: ".doc",
+            self.CALENDAR: ".ics",
         }
-        return ext_map.get(self, '.bin')
+        return ext_map.get(self, ".bin")
 
     @property
     def display_name(self) -> str:
@@ -159,28 +161,28 @@ class GopherItemType(Enum):
             A string containing the display name
         """
         name_map = {
-            self.TEXT_FILE: 'Text File',
-            self.DIRECTORY: 'Directory',
-            self.CSO_PHONE_BOOK: 'CSO Phone Book',
-            self.ERROR: 'Error',
-            self.BINHEX_FILE: 'BinHex File',
-            self.DOS_BINARY: 'DOS Binary',
-            self.UUENCODED_FILE: 'UUEncoded File',
-            self.SEARCH_SERVER: 'Search Server',
-            self.TELNET: 'Telnet Session',
-            self.BINARY_FILE: 'Binary File',
-            self.REDUNDANT_SERVER: 'Redundant Server',
-            self.TN3270_SESSION: 'TN3270 Session',
-            self.GIF_IMAGE: 'GIF Image',
-            self.IMAGE_FILE: 'Image File',
-            self.SOUND_FILE: 'Sound File',
-            self.HTML: 'HTML File',
-            self.INFORMATION: 'Information',
-            self.DOCUMENT: 'Document',
-            self.PDF: 'PDF Document',
-            self.CALENDAR: 'Calendar',
+            self.TEXT_FILE: "Text File",
+            self.DIRECTORY: "Directory",
+            self.CSO_PHONE_BOOK: "CSO Phone Book",
+            self.ERROR: "Error",
+            self.BINHEX_FILE: "BinHex File",
+            self.DOS_BINARY: "DOS Binary",
+            self.UUENCODED_FILE: "UUEncoded File",
+            self.SEARCH_SERVER: "Search Server",
+            self.TELNET: "Telnet Session",
+            self.BINARY_FILE: "Binary File",
+            self.REDUNDANT_SERVER: "Redundant Server",
+            self.TN3270_SESSION: "TN3270 Session",
+            self.GIF_IMAGE: "GIF Image",
+            self.IMAGE_FILE: "Image File",
+            self.SOUND_FILE: "Sound File",
+            self.HTML: "HTML File",
+            self.INFORMATION: "Information",
+            self.DOCUMENT: "Document",
+            self.PDF: "PDF Document",
+            self.CALENDAR: "Calendar",
         }
-        return name_map.get(self, f'Unknown Type ({self.value})')
+        return name_map.get(self, f"Unknown Type ({self.value})")
 
 
 class GopherItem(NamedTuple):
@@ -194,6 +196,7 @@ class GopherItem(NamedTuple):
     - Host (server hostname)
     - Port (server port)
     """
+
     item_type: GopherItemType
     display_string: str
     selector: str
@@ -201,7 +204,7 @@ class GopherItem(NamedTuple):
     port: int
 
     @classmethod
-    def from_menu_line(cls, line: str) -> Optional['GopherItem']:
+    def from_menu_line(cls, line: str) -> Optional["GopherItem"]:
         """
         Parse a line from a Gopher menu into a GopherItem.
 
@@ -212,10 +215,10 @@ class GopherItem(NamedTuple):
             A GopherItem if the line is valid, None otherwise
         """
         # Skip empty lines or lines not starting with a valid item type
-        if not line or line == '.':
+        if not line or line == ".":
             return None
 
-        parts = line.split('\t')
+        parts = line.split("\t")
         if len(parts) < 4:
             return None
 
@@ -251,7 +254,7 @@ class GopherItem(NamedTuple):
             display_string=display_string,
             selector=selector,
             host=host,
-            port=port
+            port=port,
         )
 
     def to_menu_line(self) -> str:
@@ -284,16 +287,16 @@ def parse_gopher_directory(data: bytes) -> List[GopherItem]:
     # Split the data into lines and process each line
     try:
         # Try UTF-8 first, as it's most common nowadays
-        text = data.decode('utf-8')
+        text = data.decode("utf-8")
     except UnicodeDecodeError:
         # Fall back to Latin-1, which can't fail
-        text = data.decode('latin-1')
+        text = data.decode("latin-1")
 
     lines = text.splitlines()
 
     for line in lines:
         # End of menu is marked by a line containing just a dot
-        if line == '.':
+        if line == ".":
             break
 
         item = GopherItem.from_menu_line(line)
@@ -360,21 +363,21 @@ def get_item_type_for_file(filename: str) -> GopherItemType:
 
     # Map common extensions to Gopher types
     ext_map = {
-        '.txt': GopherItemType.TEXT_FILE,
-        '.text': GopherItemType.TEXT_FILE,
-        '.md': GopherItemType.TEXT_FILE,
-        '.html': GopherItemType.HTML,
-        '.htm': GopherItemType.HTML,
-        '.gif': GopherItemType.GIF_IMAGE,
-        '.jpg': GopherItemType.IMAGE_FILE,
-        '.jpeg': GopherItemType.IMAGE_FILE,
-        '.png': GopherItemType.IMAGE_FILE,
-        '.pdf': GopherItemType.PDF,
-        '.wav': GopherItemType.SOUND_FILE,
-        '.mp3': GopherItemType.SOUND_FILE,
-        '.ogg': GopherItemType.SOUND_FILE,
-        '.doc': GopherItemType.DOCUMENT,
-        '.ics': GopherItemType.CALENDAR,
+        ".txt": GopherItemType.TEXT_FILE,
+        ".text": GopherItemType.TEXT_FILE,
+        ".md": GopherItemType.TEXT_FILE,
+        ".html": GopherItemType.HTML,
+        ".htm": GopherItemType.HTML,
+        ".gif": GopherItemType.GIF_IMAGE,
+        ".jpg": GopherItemType.IMAGE_FILE,
+        ".jpeg": GopherItemType.IMAGE_FILE,
+        ".png": GopherItemType.IMAGE_FILE,
+        ".pdf": GopherItemType.PDF,
+        ".wav": GopherItemType.SOUND_FILE,
+        ".mp3": GopherItemType.SOUND_FILE,
+        ".ogg": GopherItemType.SOUND_FILE,
+        ".doc": GopherItemType.DOCUMENT,
+        ".ics": GopherItemType.CALENDAR,
     }
 
     if ext in ext_map:
@@ -384,13 +387,13 @@ def get_item_type_for_file(filename: str) -> GopherItemType:
     mime_type, _ = mimetypes.guess_type(filename)
 
     if mime_type:
-        if mime_type.startswith('text/'):
+        if mime_type.startswith("text/"):
             return GopherItemType.TEXT_FILE
-        elif mime_type.startswith('image/'):
+        elif mime_type.startswith("image/"):
             return GopherItemType.IMAGE_FILE
-        elif mime_type.startswith('audio/'):
+        elif mime_type.startswith("audio/"):
             return GopherItemType.SOUND_FILE
-        elif mime_type == 'application/pdf':
+        elif mime_type == "application/pdf":
             return GopherItemType.PDF
 
     # Default to binary for unknown types

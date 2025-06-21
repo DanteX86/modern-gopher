@@ -22,16 +22,14 @@ try:
     from rich.table import Table
     from rich.text import Text
 except ImportError:
-    print("Error: The 'rich' package is required. "
-          "Please install it with 'pip install rich'.")
+    print("Error: The 'rich' package is required. " "Please install it with 'pip install rich'.")
     sys.exit(1)
 
 from modern_gopher.browser.sessions import SessionManager
 
 # Will be implemented later
 from modern_gopher.browser.terminal import launch_browser
-from modern_gopher.config import ModernGopherConfig
-from modern_gopher.config import get_config
+from modern_gopher.config import ModernGopherConfig, get_config
 from modern_gopher.core.client import GopherClient
 from modern_gopher.core.protocol import GopherProtocolError
 from modern_gopher.core.types import GopherItem
@@ -46,7 +44,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
     datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=True, console=console)]
+    handlers=[RichHandler(rich_tracebacks=True, console=console)],
 )
 logger = logging.getLogger("modern_gopher")
 
@@ -59,38 +57,19 @@ def setup_common_args(parser: argparse.ArgumentParser) -> None:
         parser: The argument parser to add arguments to
     """
     parser.add_argument(
-        "--timeout",
-        type=int,
-        default=30,
-        help="Socket timeout in seconds (default: 30)"
+        "--timeout", type=int, default=30, help="Socket timeout in seconds (default: 30)"
     )
 
     # IPv4/IPv6 group
     ip_group = parser.add_mutually_exclusive_group()
-    ip_group.add_argument(
-        "--ipv4",
-        action="store_true",
-        help="Force IPv4 usage"
-    )
-    ip_group.add_argument(
-        "--ipv6",
-        action="store_true",
-        help="Force IPv6 usage"
-    )
+    ip_group.add_argument("--ipv4", action="store_true", help="Force IPv4 usage")
+    ip_group.add_argument("--ipv6", action="store_true", help="Force IPv6 usage")
 
     # SSL/TLS options
-    parser.add_argument(
-        "--ssl",
-        action="store_true",
-        help="Use SSL/TLS for the connection"
-    )
+    parser.add_argument("--ssl", action="store_true", help="Use SSL/TLS for the connection")
 
     # Verbose option
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
 
 def display_gopher_items(items: List[GopherItem]) -> None:
@@ -117,7 +96,7 @@ def display_gopher_items(items: List[GopherItem]) -> None:
             item.display_string,
             item.selector,
             item.host,
-            str(item.port)
+            str(item.port),
         )
 
     console.print(table)
@@ -163,7 +142,7 @@ def cmd_keybindings_list(args: argparse.Namespace) -> int:
                     key_display,
                     binding.description,
                     binding.context.value,
-                    enabled_display
+                    enabled_display,
                 )
 
         console.print(table)
@@ -174,19 +153,18 @@ def cmd_keybindings_list(args: argparse.Namespace) -> int:
         if config_path.exists():
             console.print("✅ File exists", style="green")
         else:
-            console.print(
-                "❌ File does not exist (using defaults)",
-                style="yellow")
+            console.print("❌ File does not exist (using defaults)", style="yellow")
 
         console.print(
             "\n[dim]To customize keybindings, edit the file above or "
-            "use the browser's help (H key)[/dim]")
+            "use the browser's help (H key)[/dim]"
+        )
 
         return 0
 
     except Exception as e:
         console.print(f"Keybindings error: {e}", style="bold red")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             console.print_exception()
         return 1
 
@@ -208,9 +186,7 @@ def cmd_keybindings_reset(args: argparse.Namespace) -> int:
         # Backup current keybindings
         backup_path = manager.backup_keybindings()
         if backup_path:
-            console.print(
-                f"Current keybindings backed up to: {backup_path}",
-                style="dim")
+            console.print(f"Current keybindings backed up to: {backup_path}", style="dim")
 
         # Reset to defaults
         manager.reset_to_defaults()
@@ -225,8 +201,7 @@ def cmd_keybindings_reset(args: argparse.Namespace) -> int:
 
         # Show summary
         total_bindings = len(manager.bindings)
-        enabled_bindings = sum(
-            1 for binding in manager.bindings.values() if binding.enabled)
+        enabled_bindings = sum(1 for binding in manager.bindings.values() if binding.enabled)
         console.print(f"\nTotal keybindings: {total_bindings}")
         console.print(f"Enabled keybindings: {enabled_bindings}")
 
@@ -234,7 +209,7 @@ def cmd_keybindings_reset(args: argparse.Namespace) -> int:
 
     except Exception as e:
         console.print(f"Keybindings reset error: {e}", style="bold red")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             console.print_exception()
         return 1
 
@@ -251,18 +226,16 @@ def cmd_session(args: argparse.Namespace) -> int:
     """
     try:
         # Load configuration
-        config = get_config(
-            args.config_file if hasattr(
-                args, 'config_file') else None)
+        config = get_config(args.config_file if hasattr(args, "config_file") else None)
 
         # Initialize session manager
         session_manager = SessionManager(
             session_file=config.session_file,
-            backup_sessions=getattr(config, 'session_backup_sessions', 5),
-            max_sessions=getattr(config, 'session_max_sessions', 10)
+            backup_sessions=getattr(config, "session_backup_sessions", 5),
+            max_sessions=getattr(config, "session_max_sessions", 10),
         )
 
-        if args.session_action == 'list':
+        if args.session_action == "list":
             # List all sessions
             sessions = session_manager.list_sessions()
 
@@ -283,13 +256,13 @@ def cmd_session(args: argparse.Namespace) -> int:
                     session.name or "Unnamed",
                     session.current_url or "N/A",
                     session.created_datetime.strftime("%Y-%m-%d %H:%M"),
-                    session.last_used_datetime.strftime("%Y-%m-%d %H:%M")
+                    session.last_used_datetime.strftime("%Y-%m-%d %H:%M"),
                 )
 
             console.print(table)
             console.print(f"\nTotal sessions: {len(sessions)}")
 
-        elif args.session_action == 'show':
+        elif args.session_action == "show":
             # Show detailed session info
             session_info = session_manager.get_session_info(args.session_id)
 
@@ -297,7 +270,8 @@ def cmd_session(args: argparse.Namespace) -> int:
                 console.print(
                     f"Session not found: {
                         args.session_id}",
-                    style="red")
+                    style="red",
+                )
                 return 1
 
             # Create detailed info panel
@@ -311,63 +285,67 @@ History Count: {session_info['history_count']}
 Tags: {', '.join(session_info['tags']) if session_info['tags'] else 'None'}
 Searching: {session_info['is_searching']}"""
 
-            if session_info['is_searching'] and session_info['search_query']:
+            if session_info["is_searching"] and session_info["search_query"]:
                 info_text += f"\nSearch Query: {session_info['search_query']}"
 
             console.print(Panel(info_text, title="Session Details"))
 
-        elif args.session_action == 'load':
+        elif args.session_action == "load":
             # This would typically be handled by the browser
             console.print(
-                "Use 'modern-gopher browse' with session loading to load a session",
-                style="yellow")
+                "Use 'modern-gopher browse' with session loading to load a session", style="yellow"
+            )
 
-        elif args.session_action == 'delete':
+        elif args.session_action == "delete":
             # Delete session
             if session_manager.delete_session(args.session_id):
                 console.print(
                     f"Session deleted: {
                         args.session_id}",
-                    style="green")
+                    style="green",
+                )
             else:
                 console.print(
                     f"Failed to delete session: {
-                        args.session_id}", style="red")
+                        args.session_id}",
+                    style="red",
+                )
                 return 1
 
-        elif args.session_action == 'rename':
+        elif args.session_action == "rename":
             # Rename session
             if session_manager.rename_session(args.session_id, args.new_name):
                 console.print(
-                    f"Session renamed: {args.session_id} -> {args.new_name}",
-                    style="green")
+                    f"Session renamed: {args.session_id} -> {args.new_name}", style="green"
+                )
             else:
                 console.print(
                     f"Failed to rename session: {
-                        args.session_id}", style="red")
+                        args.session_id}",
+                    style="red",
+                )
                 return 1
 
-        elif args.session_action == 'export':
+        elif args.session_action == "export":
             # Export sessions
             if session_manager.export_sessions(args.export_path):
                 console.print(
                     f"Sessions exported to: {
                         args.export_path}",
-                    style="green")
+                    style="green",
+                )
             else:
                 console.print("Failed to export sessions", style="red")
                 return 1
 
-        elif args.session_action == 'import':
+        elif args.session_action == "import":
             # Import sessions
-            if session_manager.import_sessions(
-                args.import_path,
-                merge=not args.replace
-            ):
+            if session_manager.import_sessions(args.import_path, merge=not args.replace):
                 console.print(
                     f"Sessions imported from: {
                         args.import_path}",
-                    style="green")
+                    style="green",
+                )
             else:
                 console.print("Failed to import sessions", style="red")
                 return 1
@@ -376,7 +354,7 @@ Searching: {session_info['is_searching']}"""
 
     except Exception as e:
         console.print(f"Session management error: {e}", style="bold red")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             console.print_exception()
         return 1
 
@@ -392,11 +370,10 @@ def cmd_config(args: argparse.Namespace) -> int:
         Exit code (0 for success, non-zero for error)
     """
     try:
-        config_path = args.config_file if hasattr(
-            args, 'config_file') else None
+        config_path = args.config_file if hasattr(args, "config_file") else None
         config = get_config(config_path)
 
-        if args.config_action == 'show':
+        if args.config_action == "show":
             # Display current configuration
             table = Table(title="Modern Gopher Configuration")
             table.add_column("Section", style="cyan")
@@ -414,14 +391,13 @@ def cmd_config(args: argparse.Namespace) -> int:
             console.print(table)
             console.print(
                 f"\nConfiguration file: {
-                    config.get_default_config_path()}")
+                    config.get_default_config_path()}"
+            )
 
-        elif args.config_action == 'get':
+        elif args.config_action == "get":
             # Get specific configuration value
-            if not hasattr(args, 'key') or not args.key:
-                console.print(
-                    "Error: key required for get command",
-                    style="red")
+            if not hasattr(args, "key") or not args.key:
+                console.print("Error: key required for get command", style="red")
                 return 1
 
             value = config.get_value(args.key)
@@ -431,17 +407,13 @@ def cmd_config(args: argparse.Namespace) -> int:
                 console.print(f"Key '{args.key}' not found", style="red")
                 return 1
 
-        elif args.config_action == 'set':
+        elif args.config_action == "set":
             # Set configuration value
-            if not hasattr(args, 'key') or not args.key:
-                console.print(
-                    "Error: key required for set command",
-                    style="red")
+            if not hasattr(args, "key") or not args.key:
+                console.print("Error: key required for set command", style="red")
                 return 1
-            if not hasattr(args, 'value') or args.value is None:
-                console.print(
-                    "Error: value required for set command",
-                    style="red")
+            if not hasattr(args, "value") or args.value is None:
+                console.print("Error: value required for set command", style="red")
                 return 1
 
             # Validate the setting first
@@ -458,10 +430,9 @@ def cmd_config(args: argparse.Namespace) -> int:
                     console.print(
                         f"Set {
                             args.key} = [green]{
-                            args.value}[/green]")
-                    console.print(
-                        f"Configuration saved to {config_save_path}",
-                        style="dim")
+                            args.value}[/green]"
+                    )
+                    console.print(f"Configuration saved to {config_save_path}", style="dim")
                 else:
                     console.print("Failed to save configuration", style="red")
                     return 1
@@ -469,7 +440,7 @@ def cmd_config(args: argparse.Namespace) -> int:
                 console.print(f"Failed to set {args.key}", style="red")
                 return 1
 
-        elif args.config_action == 'list':
+        elif args.config_action == "list":
             # List all available configuration keys
             from modern_gopher.config import DEFAULT_CONFIG
 
@@ -484,26 +455,21 @@ def cmd_config(args: argparse.Namespace) -> int:
             for section, settings in DEFAULT_CONFIG.items():
                 for key, default_value in settings.items():
                     key_path = f"{section}.{key}"
-                    current_value = config_dict.get(
-                        section, {}).get(key, "N/A")
-                    value_type = type(
-                        default_value).__name__ if default_value is not None else "None"
-
-                    table.add_row(
-                        key_path,
-                        value_type,
-                        str(current_value),
-                        str(default_value)
+                    current_value = config_dict.get(section, {}).get(key, "N/A")
+                    value_type = (
+                        type(default_value).__name__ if default_value is not None else "None"
                     )
+
+                    table.add_row(key_path, value_type, str(current_value), str(default_value))
 
             console.print(table)
             console.print(
-                "\n[dim]Use 'modern-gopher config set <key> <value>' "
-                "to change values[/dim]")
+                "\n[dim]Use 'modern-gopher config set <key> <value>' " "to change values[/dim]"
+            )
 
-        elif args.config_action == 'reset':
+        elif args.config_action == "reset":
             # Reset to defaults or specific section
-            if hasattr(args, 'section') and args.section:
+            if hasattr(args, "section") and args.section:
                 # Reset specific section
                 if config.reset_section(args.section):
                     config_save_path = config_path or config.get_default_config_path()
@@ -511,15 +477,17 @@ def cmd_config(args: argparse.Namespace) -> int:
                         console.print(
                             f"Section '{
                                 args.section}' reset to defaults",
-                            style="green")
+                            style="green",
+                        )
                     else:
-                        console.print(
-                            "Failed to save configuration", style="red")
+                        console.print("Failed to save configuration", style="red")
                         return 1
                 else:
                     console.print(
                         f"Failed to reset section '{
-                            args.section}'", style="red")
+                            args.section}'",
+                        style="red",
+                    )
                     return 1
             else:
                 # Reset entire configuration
@@ -527,26 +495,22 @@ def cmd_config(args: argparse.Namespace) -> int:
                 default_config = ModernGopherConfig()
                 if default_config.save(config_save_path):
                     console.print(
-                        f"Configuration reset to defaults: {config_save_path}",
-                        style="green")
+                        f"Configuration reset to defaults: {config_save_path}", style="green"
+                    )
                 else:
                     console.print("Failed to reset configuration", style="red")
                     return 1
 
-        elif args.config_action == 'backup':
+        elif args.config_action == "backup":
             # Create configuration backup
-            backup_path = getattr(args, 'backup_path', None)
+            backup_path = getattr(args, "backup_path", None)
             if config.backup_config(backup_path):
-                console.print(
-                    "Configuration backup created successfully",
-                    style="green")
+                console.print("Configuration backup created successfully", style="green")
             else:
-                console.print(
-                    "Failed to create configuration backup",
-                    style="red")
+                console.print("Failed to create configuration backup", style="red")
                 return 1
 
-        elif args.config_action == 'path':
+        elif args.config_action == "path":
             # Show config file path
             config_path = config.get_default_config_path()
             console.print(f"Configuration file: {config_path}")
@@ -554,14 +518,14 @@ def cmd_config(args: argparse.Namespace) -> int:
                 console.print("✅ File exists", style="green")
             else:
                 console.print(
-                    "❌ File does not exist (will be created on first save)",
-                    style="yellow")
+                    "❌ File does not exist (will be created on first save)", style="yellow"
+                )
 
         return 0
 
     except Exception as e:
         console.print(f"Configuration error: {e}", style="bold red")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             console.print_exception()
         return 1
 
@@ -578,13 +542,10 @@ def cmd_browse(args: argparse.Namespace) -> int:
     """
     try:
         # Load configuration
-        config = get_config(
-            args.config_file if hasattr(
-                args, 'config_file') else None)
+        config = get_config(args.config_file if hasattr(args, "config_file") else None)
 
         # Use URL from args or config default
-        url = args.url if hasattr(
-            args, 'url') and args.url else config.effective_initial_url
+        url = args.url if hasattr(args, "url") and args.url else config.effective_initial_url
 
         # Set log level based on verbosity
         if args.verbose:
@@ -598,28 +559,26 @@ def cmd_browse(args: argparse.Namespace) -> int:
             use_ipv6 = True
 
         # Determine timeout (args override config)
-        timeout = getattr(args, 'timeout', None) or config.timeout
+        timeout = getattr(args, "timeout", None) or config.timeout
 
         # Determine SSL usage (args override config)
-        use_ssl = getattr(args, 'ssl', None) or config.use_ssl
+        use_ssl = getattr(args, "ssl", None) or config.use_ssl
 
         # Use cache directory from config
         cache_dir = config.cache_directory if config.cache_enabled else None
 
         # Show startup message
-        console.print(Panel.fit(
-            "Launching Modern Gopher Browser",
-            title="Modern Gopher",
-            subtitle=f"Initial URL: {url}"
-        ))
+        console.print(
+            Panel.fit(
+                "Launching Modern Gopher Browser",
+                title="Modern Gopher",
+                subtitle=f"Initial URL: {url}",
+            )
+        )
 
         # Launch the browser interface
         return launch_browser(
-            url=url,
-            timeout=timeout,
-            use_ssl=use_ssl,
-            use_ipv6=use_ipv6,
-            cache_dir=cache_dir
+            url=url, timeout=timeout, use_ssl=use_ssl, use_ipv6=use_ipv6, cache_dir=cache_dir
         )
 
     except Exception as e:
@@ -655,10 +614,7 @@ def cmd_get(args: argparse.Namespace) -> int:
             use_ipv6 = True
 
         # Create client
-        client = GopherClient(
-            timeout=args.timeout,
-            use_ipv6=use_ipv6
-        )
+        client = GopherClient(timeout=args.timeout, use_ipv6=use_ipv6)
 
         # Parse URL
         gopher_url = parse_gopher_url(url)
@@ -675,11 +631,11 @@ def cmd_get(args: argparse.Namespace) -> int:
                 if output_dir and not os.path.exists(output_dir):
                     os.makedirs(output_dir)
 
-                bytes_written = client.get_resource(
-                    gopher_url, file_path=output_path)
+                bytes_written = client.get_resource(gopher_url, file_path=output_path)
                 console.print(
                     f"Saved {bytes_written} bytes to [bold]{
-                        args.output}[/bold]")
+                        args.output}[/bold]"
+                )
             else:
                 # Display in console
                 resource = client.get_resource(gopher_url)
@@ -701,8 +657,9 @@ def cmd_get(args: argparse.Namespace) -> int:
                         console.print(Text(resource))
                 else:
                     # Binary content
-                    console.print(f"Binary content ({len(resource)} bytes). "
-                                  f"Use --output to save to file.")
+                    console.print(
+                        f"Binary content ({len(resource)} bytes). " f"Use --output to save to file."
+                    )
 
         return 0
 
@@ -751,9 +708,11 @@ def cmd_info(args: argparse.Namespace) -> int:
 
         if gopher_url.item_type:
             table.add_row(
-                "Item Type", f"{
+                "Item Type",
+                f"{
                     gopher_url.item_type.display_name} ({
-                    gopher_url.item_type.value})")
+                    gopher_url.item_type.value})",
+            )
         else:
             table.add_row("Item Type", "Not specified (defaults to Directory)")
 
@@ -784,420 +743,257 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
         Parsed arguments
     """
     parser = argparse.ArgumentParser(
-        prog="modern-gopher",
-        description="Modern tools for interacting with the Gopher protocol"
+        prog="modern-gopher", description="Modern tools for interacting with the Gopher protocol"
     )
 
     # Add version option
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0"
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 0.1.0")
 
     # Create subparsers for commands
-    subparsers = parser.add_subparsers(
-        dest="command",
-        help="Command to execute",
-        required=True
-    )
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute", required=True)
 
     # Browse command
-    browse_parser = subparsers.add_parser(
-        "browse",
-        help="Launch the interactive browser"
-    )
-    browse_parser.add_argument(
-        "url",
-        help="The Gopher URL to browse"
-    )
+    browse_parser = subparsers.add_parser("browse", help="Launch the interactive browser")
+    browse_parser.add_argument("url", help="The Gopher URL to browse")
     setup_common_args(browse_parser)
     browse_parser.set_defaults(func=cmd_browse)
 
     # Get command
-    get_parser = subparsers.add_parser(
-        "get",
-        help="Fetch a Gopher resource"
-    )
+    get_parser = subparsers.add_parser("get", help="Fetch a Gopher resource")
+    get_parser.add_argument("url", help="The Gopher URL to fetch")
+    get_parser.add_argument("-o", "--output", help="Save resource to specified file")
     get_parser.add_argument(
-        "url",
-        help="The Gopher URL to fetch"
-    )
-    get_parser.add_argument(
-        "-o", "--output",
-        help="Save resource to specified file"
-    )
-    get_parser.add_argument(
-        "--markdown",
-        action="store_true",
-        help="Render text content as Markdown"
+        "--markdown", action="store_true", help="Render text content as Markdown"
     )
     setup_common_args(get_parser)
     get_parser.set_defaults(func=cmd_get)
 
     # Info command
-    info_parser = subparsers.add_parser(
-        "info",
-        help="Display information about a Gopher URL"
-    )
-    info_parser.add_argument(
-        "url",
-        help="The Gopher URL to display information about"
-    )
-    info_parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    info_parser = subparsers.add_parser("info", help="Display information about a Gopher URL")
+    info_parser.add_argument("url", help="The Gopher URL to display information about")
+    info_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     info_parser.set_defaults(func=cmd_info)
 
     # Session command with subcommands
-    session_parser = subparsers.add_parser(
-        "session",
-        help="Manage browser sessions"
-    )
+    session_parser = subparsers.add_parser("session", help="Manage browser sessions")
 
     # Session subcommands
     session_subparsers = session_parser.add_subparsers(
-        dest="session_action",
-        help="Session action to perform",
-        required=True
+        dest="session_action", help="Session action to perform", required=True
     )
 
     # List sessions command
-    list_sessions_parser = session_subparsers.add_parser(
-        "list",
-        help="List all saved sessions"
-    )
+    list_sessions_parser = session_subparsers.add_parser("list", help="List all saved sessions")
 
     # Show session command
     show_session_parser = session_subparsers.add_parser(
-        "show",
-        help="Show detailed information about a session"
+        "show", help="Show detailed information about a session"
     )
-    show_session_parser.add_argument(
-        "session_id",
-        help="Session ID to show"
-    )
+    show_session_parser.add_argument("session_id", help="Session ID to show")
 
     # Load session command
-    load_session_parser = session_subparsers.add_parser(
-        "load",
-        help="Load a saved session"
-    )
-    load_session_parser.add_argument(
-        "session_id",
-        help="Session ID to load"
-    )
+    load_session_parser = session_subparsers.add_parser("load", help="Load a saved session")
+    load_session_parser.add_argument("session_id", help="Session ID to load")
 
     # Delete session command
-    delete_session_parser = session_subparsers.add_parser(
-        "delete",
-        help="Delete a saved session"
-    )
-    delete_session_parser.add_argument(
-        "session_id",
-        help="Session ID to delete"
-    )
+    delete_session_parser = session_subparsers.add_parser("delete", help="Delete a saved session")
+    delete_session_parser.add_argument("session_id", help="Session ID to delete")
 
     # Rename session command
-    rename_session_parser = session_subparsers.add_parser(
-        "rename",
-        help="Rename a saved session"
-    )
-    rename_session_parser.add_argument(
-        "session_id",
-        help="Session ID to rename"
-    )
-    rename_session_parser.add_argument(
-        "new_name",
-        help="New name for the session"
-    )
+    rename_session_parser = session_subparsers.add_parser("rename", help="Rename a saved session")
+    rename_session_parser.add_argument("session_id", help="Session ID to rename")
+    rename_session_parser.add_argument("new_name", help="New name for the session")
 
     # Export sessions command
     export_sessions_parser = session_subparsers.add_parser(
-        "export",
-        help="Export sessions to a file"
+        "export", help="Export sessions to a file"
     )
-    export_sessions_parser.add_argument(
-        "export_path",
-        help="Path to export sessions to"
-    )
+    export_sessions_parser.add_argument("export_path", help="Path to export sessions to")
 
     # Import sessions command
     import_sessions_parser = session_subparsers.add_parser(
-        "import",
-        help="Import sessions from a file"
+        "import", help="Import sessions from a file"
     )
-    import_sessions_parser.add_argument(
-        "import_path",
-        help="Path to import sessions from"
-    )
+    import_sessions_parser.add_argument("import_path", help="Path to import sessions from")
     import_sessions_parser.add_argument(
         "--merge",
         action="store_true",
         default=True,
-        help="Merge with existing sessions (default: True)"
+        help="Merge with existing sessions (default: True)",
     )
     import_sessions_parser.add_argument(
-        "--replace",
-        action="store_true",
-        help="Replace existing sessions"
+        "--replace", action="store_true", help="Replace existing sessions"
     )
 
     # Common session arguments
     for subparser in [
-            list_sessions_parser,
-            show_session_parser,
-            load_session_parser,
-            delete_session_parser,
-            rename_session_parser,
-            export_sessions_parser,
-            import_sessions_parser]:
+        list_sessions_parser,
+        show_session_parser,
+        load_session_parser,
+        delete_session_parser,
+        rename_session_parser,
+        export_sessions_parser,
+        import_sessions_parser,
+    ]:
         subparser.add_argument(
             "--config-file",
-            help=("Path to configuration file "
-                  "(defaults to ~/.config/modern-gopher/config.yaml)")
+            help=(
+                "Path to configuration file " "(defaults to ~/.config/modern-gopher/config.yaml)"
+            ),
         )
-        subparser.add_argument(
-            "-v", "--verbose",
-            action="store_true",
-            help="Enable verbose output"
-        )
+        subparser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     session_parser.set_defaults(func=cmd_session)
 
     # Config command with subcommands
-    config_parser = subparsers.add_parser(
-        "config",
-        help="Manage configuration settings"
-    )
+    config_parser = subparsers.add_parser("config", help="Manage configuration settings")
 
     # Keybindings command with subcommands
-    keybindings_parser = subparsers.add_parser(
-        "keybindings",
-        help="Manage keybindings"
-    )
+    keybindings_parser = subparsers.add_parser("keybindings", help="Manage keybindings")
 
     # Keybindings subcommands
     keybindings_subparsers = keybindings_parser.add_subparsers(
-        dest="keybinding_action",
-        help="Keybinding action to perform",
-        required=True
+        dest="keybinding_action", help="Keybinding action to perform", required=True
     )
 
     # List keybindings command
     list_keybindings_parser = keybindings_subparsers.add_parser(
-        "list",
-        help="List all current keybindings"
+        "list", help="List all current keybindings"
     )
 
     # Reset keybindings command
     reset_keybindings_parser = keybindings_subparsers.add_parser(
-        "reset",
-        help="Reset keybindings to defaults"
+        "reset", help="Reset keybindings to defaults"
     )
 
     list_keybindings_parser.add_argument(
         "--config-file",
-        help=("Path to configuration file "
-              "(defaults to ~/.config/modern-gopher/config.yaml)")
+        help=("Path to configuration file " "(defaults to ~/.config/modern-gopher/config.yaml)"),
     )
     reset_keybindings_parser.add_argument(
         "--config-file",
-        help=("Path to configuration file "
-              "(defaults to ~/.config/modern-gopher/config.yaml)")
+        help=("Path to configuration file " "(defaults to ~/.config/modern-gopher/config.yaml)"),
     )
     list_keybindings_parser.set_defaults(func=cmd_keybindings_list)
     reset_keybindings_parser.set_defaults(func=cmd_keybindings_reset)
 
     # Config subcommands
     config_subparsers = config_parser.add_subparsers(
-        dest="config_action",
-        help="Configuration action to perform",
-        required=True
+        dest="config_action", help="Configuration action to perform", required=True
     )
 
     # Show command
-    show_parser = config_subparsers.add_parser(
-        "show",
-        help="Display current configuration"
-    )
+    show_parser = config_subparsers.add_parser("show", help="Display current configuration")
 
     # Get command
-    get_parser = config_subparsers.add_parser(
-        "get",
-        help="Get a configuration value"
-    )
+    get_parser = config_subparsers.add_parser("get", help="Get a configuration value")
     get_parser.add_argument(
-        "key",
-        help=("Configuration key in format 'section.key' "
-              "(e.g., 'gopher.timeout')"))
+        "key", help=("Configuration key in format 'section.key' " "(e.g., 'gopher.timeout')")
+    )
 
     # Set command
-    set_parser = config_subparsers.add_parser(
-        "set",
-        help="Set a configuration value"
-    )
+    set_parser = config_subparsers.add_parser("set", help="Set a configuration value")
     set_parser.add_argument(
-        "key",
-        help=("Configuration key in format 'section.key' "
-              "(e.g., 'gopher.timeout')"))
-    set_parser.add_argument(
-        "value",
-        help="Value to set"
+        "key", help=("Configuration key in format 'section.key' " "(e.g., 'gopher.timeout')")
     )
+    set_parser.add_argument("value", help="Value to set")
 
     # List command
-    list_parser = config_subparsers.add_parser(
-        "list",
-        help="List all available configuration keys"
-    )
+    list_parser = config_subparsers.add_parser("list", help="List all available configuration keys")
 
     # Reset command
-    reset_parser = config_subparsers.add_parser(
-        "reset",
-        help="Reset configuration to defaults"
-    )
+    reset_parser = config_subparsers.add_parser("reset", help="Reset configuration to defaults")
     reset_parser.add_argument(
         "section",
         nargs="?",
-        help="Optional section to reset (resets entire config if not specified)"
+        help="Optional section to reset (resets entire config if not specified)",
     )
 
     # Backup command
-    backup_parser = config_subparsers.add_parser(
-        "backup",
-        help="Create a configuration backup"
-    )
+    backup_parser = config_subparsers.add_parser("backup", help="Create a configuration backup")
     backup_parser.add_argument(
-        "backup_path",
-        nargs="?",
-        help="Optional backup file path (auto-generated if not specified)"
+        "backup_path", nargs="?", help="Optional backup file path (auto-generated if not specified)"
     )
 
     # Path command
-    path_parser = config_subparsers.add_parser(
-        "path",
-        help="Show configuration file path"
-    )
+    path_parser = config_subparsers.add_parser("path", help="Show configuration file path")
 
     # Common config arguments
-    for subparser in [show_parser, get_parser, set_parser, list_parser,
-                      reset_parser, backup_parser, path_parser]:
+    for subparser in [
+        show_parser,
+        get_parser,
+        set_parser,
+        list_parser,
+        reset_parser,
+        backup_parser,
+        path_parser,
+    ]:
         subparser.add_argument(
             "--config-file",
-            help=("Path to configuration file "
-                  "(defaults to ~/.config/modern-gopher/config.yaml)")
+            help=(
+                "Path to configuration file " "(defaults to ~/.config/modern-gopher/config.yaml)"
+            ),
         )
-        subparser.add_argument(
-            "-v", "--verbose",
-            action="store_true",
-            help="Enable verbose output"
-        )
+        subparser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     config_parser.set_defaults(func=cmd_config)
 
     # Plugins command with subcommands
-    plugins_parser = subparsers.add_parser(
-        "plugins",
-        help="Manage plugins"
-    )
-    
+    plugins_parser = subparsers.add_parser("plugins", help="Manage plugins")
+
     # Plugin subcommands
     plugins_subparsers = plugins_parser.add_subparsers(
-        dest="plugin_action",
-        help="Plugin action to perform",
-        required=True
+        dest="plugin_action", help="Plugin action to perform", required=True
     )
-    
+
     # List plugins command
-    list_plugins_parser = plugins_subparsers.add_parser(
-        "list",
-        help="List all available plugins"
-    )
-    
+    list_plugins_parser = plugins_subparsers.add_parser("list", help="List all available plugins")
+
     # Plugin info command
     info_plugin_parser = plugins_subparsers.add_parser(
-        "info",
-        help="Show detailed information about a plugin"
+        "info", help="Show detailed information about a plugin"
     )
-    info_plugin_parser.add_argument(
-        "plugin_name",
-        help="Name of the plugin to show info for"
-    )
-    
+    info_plugin_parser.add_argument("plugin_name", help="Name of the plugin to show info for")
+
     # Enable plugin command
-    enable_plugin_parser = plugins_subparsers.add_parser(
-        "enable",
-        help="Enable a plugin"
-    )
-    enable_plugin_parser.add_argument(
-        "plugin_name",
-        help="Name of the plugin to enable"
-    )
-    
+    enable_plugin_parser = plugins_subparsers.add_parser("enable", help="Enable a plugin")
+    enable_plugin_parser.add_argument("plugin_name", help="Name of the plugin to enable")
+
     # Disable plugin command
-    disable_plugin_parser = plugins_subparsers.add_parser(
-        "disable",
-        help="Disable a plugin"
-    )
-    disable_plugin_parser.add_argument(
-        "plugin_name",
-        help="Name of the plugin to disable"
-    )
-    
+    disable_plugin_parser = plugins_subparsers.add_parser("disable", help="Disable a plugin")
+    disable_plugin_parser.add_argument("plugin_name", help="Name of the plugin to disable")
+
     # Configure plugin command
-    configure_plugin_parser = plugins_subparsers.add_parser(
-        "configure",
-        help="Configure a plugin"
-    )
-    configure_plugin_parser.add_argument(
-        "plugin_name",
-        help="Name of the plugin to configure"
-    )
-    configure_plugin_parser.add_argument(
-        "--config",
-        help="Configuration JSON string"
-    )
-    
+    configure_plugin_parser = plugins_subparsers.add_parser("configure", help="Configure a plugin")
+    configure_plugin_parser.add_argument("plugin_name", help="Name of the plugin to configure")
+    configure_plugin_parser.add_argument("--config", help="Configuration JSON string")
+
     # Load plugin command
-    load_plugin_parser = plugins_subparsers.add_parser(
-        "load",
-        help="Load a plugin from file"
-    )
-    load_plugin_parser.add_argument(
-        "plugin_path",
-        help="Path to the plugin file"
-    )
-    
+    load_plugin_parser = plugins_subparsers.add_parser("load", help="Load a plugin from file")
+    load_plugin_parser.add_argument("plugin_path", help="Path to the plugin file")
+
     # Common plugin arguments
     for subparser in [
-            list_plugins_parser,
-            info_plugin_parser,
-            enable_plugin_parser,
-            disable_plugin_parser,
-            configure_plugin_parser,
-            load_plugin_parser]:
+        list_plugins_parser,
+        info_plugin_parser,
+        enable_plugin_parser,
+        disable_plugin_parser,
+        configure_plugin_parser,
+        load_plugin_parser,
+    ]:
         subparser.add_argument(
             "--config-file",
-            help=("Path to configuration file "
-                  "(defaults to ~/.config/modern-gopher/config.yaml)")
+            help=(
+                "Path to configuration file " "(defaults to ~/.config/modern-gopher/config.yaml)"
+            ),
         )
-        subparser.add_argument(
-            "-v", "--verbose",
-            action="store_true",
-            help="Enable verbose output"
-        )
-    
-    
+        subparser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+
     # Add --enabled-only flag to list command
     list_plugins_parser.add_argument(
-        "--enabled-only",
-        action="store_true",
-        help="Show only enabled plugins"
+        "--enabled-only", action="store_true", help="Show only enabled plugins"
     )
-    
+
     plugins_parser.set_defaults(func=cmd_plugins)
 
     return parser.parse_args(args)
@@ -1218,15 +1014,15 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 
         # Load plugin manager
         # Use default config directory if not provided
-        if hasattr(args, 'config_file') and args.config_file:
+        if hasattr(args, "config_file") and args.config_file:
             config_dir = str(Path(args.config_file).parent)
         else:
-            config_dir = str(Path.home() / '.config' / 'modern-gopher')
+            config_dir = str(Path.home() / ".config" / "modern-gopher")
 
         plugin_manager = get_manager(config_dir)
         plugin_manager.initialize()
 
-        if args.plugin_action == 'list':
+        if args.plugin_action == "list":
             # List all plugins
             plugins_info = plugin_manager.get_plugin_info()
 
@@ -1236,8 +1032,9 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 
             # Filter to enabled only if requested
             if args.enabled_only:
-                plugins_info = {name: info for name,
-                                info in plugins_info.items() if info['enabled']}
+                plugins_info = {
+                    name: info for name, info in plugins_info.items() if info["enabled"]
+                }
 
             if not plugins_info:
                 console.print("No enabled plugins found", style="yellow")
@@ -1252,23 +1049,17 @@ def cmd_plugins(args: argparse.Namespace) -> int:
             table.add_column("Description", style="white")
 
             for name, info in sorted(plugins_info.items()):
-                status = "✅" if info['enabled'] else "❌"
-                description = info['description']
+                status = "✅" if info["enabled"] else "❌"
+                description = info["description"]
                 if len(description) > 50:
                     description = description[:47] + "..."
 
-                table.add_row(
-                    name,
-                    info['version'],
-                    info['type'],
-                    status,
-                    description
-                )
+                table.add_row(name, info["version"], info["type"], status, description)
 
             console.print(table)
             console.print(f"\nTotal plugins: {len(plugins_info)}")
 
-        elif args.plugin_action == 'info':
+        elif args.plugin_action == "info":
             # Show plugin info
             plugins_info = plugin_manager.get_plugin_info()
 
@@ -1276,7 +1067,8 @@ def cmd_plugins(args: argparse.Namespace) -> int:
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' not found",
-                    style="red")
+                    style="red",
+                )
                 return 1
 
             info = plugins_info[args.plugin_name]
@@ -1294,51 +1086,56 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 {info['description']}
 """
 
-            if info.get('dependencies'):
+            if info.get("dependencies"):
                 details += f"\n[bold]Dependencies:[/bold] {
                     ', '.join(
                         info['dependencies'])}"
 
-            if info.get('supported_types'):
-                supported_types = ', '.join(info['supported_types'])
+            if info.get("supported_types"):
+                supported_types = ", ".join(info["supported_types"])
                 details += f"\n[bold]Supported Item Types:[/bold] {supported_types}"
 
             panel = Panel(
                 details,
                 title=f"Plugin: {
                     args.plugin_name}",
-                border_style="blue")
+                border_style="blue",
+            )
             console.print(panel)
 
-        elif args.plugin_action == 'enable':
+        elif args.plugin_action == "enable":
             # Enable plugin
             if plugin_manager.enable_plugin(args.plugin_name):
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' enabled ✅",
-                    style="green")
+                    style="green",
+                )
             else:
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' not found",
-                    style="red")
+                    style="red",
+                )
                 return 1
 
-        elif args.plugin_action == 'disable':
+        elif args.plugin_action == "disable":
             # Disable plugin
             if plugin_manager.disable_plugin(args.plugin_name):
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' disabled ❌",
-                    style="yellow")
+                    style="yellow",
+                )
             else:
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' not found",
-                    style="red")
+                    style="red",
+                )
                 return 1
 
-        elif args.plugin_action == 'configure':
+        elif args.plugin_action == "configure":
             # Configure plugin
             import json
 
@@ -1348,24 +1145,24 @@ def cmd_plugins(args: argparse.Namespace) -> int:
             if args.config:
                 config_data = json.loads(args.config)
             elif args.file:
-                with open(args.file, 'r') as f:
+                with open(args.file, "r") as f:
                     config_data = json.load(f)
             else:
-                console.print(
-                    "No configuration provided. Use --config or --file",
-                    style="red")
+                console.print("No configuration provided. Use --config or --file", style="red")
                 return 1
 
             if plugin_manager.configure_plugin(args.plugin_name, config_data):
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' configured ✅",
-                    style="green")
+                    style="green",
+                )
             else:
                 console.print(
                     f"Plugin '{
                         args.plugin_name}' not found",
-                    style="red")
+                    style="red",
+                )
                 return 1
 
         return 0
@@ -1376,11 +1173,13 @@ def cmd_plugins(args: argparse.Namespace) -> int:
     except FileNotFoundError:
         console.print(
             f"Configuration file not found: {
-                args.file}", style="red")
+                args.file}",
+            style="red",
+        )
         return 1
     except Exception as e:
         console.print(f"Plugin management error: {e}", style="bold red")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             console.print_exception()
         return 1
 

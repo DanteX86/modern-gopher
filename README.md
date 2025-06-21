@@ -9,7 +9,7 @@
 
 A modern, feature-rich terminal-based client for the Gopher protocol built in Python.
 
-> 🔥 **New in v0.2.0**: Loading indicators, session management, and enhanced user experience!
+> 🔥 **New in v1.2.0**: Enhanced connection stability (60s timeout), improved error handling, and comprehensive bug fixes!
 
 ## 🎯 Current Status
 
@@ -118,7 +118,15 @@ $EDITOR ~/.config/modern-gopher/keybindings.json
 - **CLI management**: Full command-line interface for keybinding management
 - **Persistent storage**: Keybindings saved to `~/.config/modern-gopher/keybindings.json`
 
-See [docs/KEYBINDINGS.md](docs/KEYBINDINGS.md) for comprehensive documentation.
+See [docs/KEYBINDINGS.md](docs/KEYBINDINGS.md) for comprehensive keybinding documentation.
+
+## Documentation
+
+- **[User Guide](docs/USER_GUIDE.md)** - Comprehensive guide for new and experienced users
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Essential commands and shortcuts
+- **[Manual](MANUAL.md)** - Complete technical documentation
+- **[Keybindings](docs/KEYBINDINGS.md)** - Customizable keyboard shortcuts
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
 
 ## Development
 

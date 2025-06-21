@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# TDD CLI wrapper for Modern Gopher
+exec python3 "$(dirname "$0")/tdd.py" "$@"
+
