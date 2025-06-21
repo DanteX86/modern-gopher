@@ -7,7 +7,6 @@ allowing users to interact with Gopher resources through the command line.
 """
 
 import argparse
-import json
 import logging
 import os
 import sys

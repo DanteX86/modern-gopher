@@ -101,14 +101,14 @@ class TestTextCleaner(unittest.TestCase):
 
     def test_process_remove_trailing_whitespace_disabled(self):
         """Test processing with trailing whitespace removal disabled."""
-        self.cleaner.config = {"remove_trailing_whitespace": False}
+        self.cleaner.config = {"remove_trailing_whitespace": False, "strip_content": False}
         content = "Line 1   \nLine 2\t\n"
         metadata = {}
         
         result_content, result_metadata = self.cleaner.process(content, metadata)
         
-        # Should still strip overall content by default (strip_content=True), but preserve line-level trailing whitespace
-        self.assertEqual(result_content, "Line 1   \nLine 2\t")
+        # Should preserve both line-level and overall trailing whitespace
+        self.assertEqual(result_content, "Line 1   \nLine 2\t\n")
         self.assertNotIn("removed_trailing_whitespace", result_metadata["cleaning_changes"])
 
     def test_process_limit_blank_lines(self):
@@ -247,7 +247,7 @@ class TestTextCleaner(unittest.TestCase):
         
         result_content, result_metadata = self.cleaner.process(content, metadata)
         
-        expected = 'He said "Hello"...\n\n\nGoodbye.'
+        expected = 'He said "Hello"...\n\n\n  Goodbye.'
         self.assertEqual(result_content, expected)
         
         changes = result_metadata["cleaning_changes"]

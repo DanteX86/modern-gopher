@@ -338,7 +338,7 @@ class SessionManager:
 
         # Sort by last used time and keep only the most recent ones
         sessions_by_time = sorted(self.sessions.values(), key=lambda s: s.last_used, reverse=True)
-        sessions_to_remove = sessions_by_time[self.max_sessions :]
+        sessions_to_remove = sessions_by_time[self.max_sessions:]
 
         # Remove old sessions
         for session in sessions_to_remove:
@@ -441,7 +441,7 @@ class SessionManager:
             "id": session.session_id,
             "name": session.name,
             "description": session.description,
-            "tags": session.tags,
+            "tags": session.tags[:],
             "created_at": session.created_datetime.isoformat(),
             "last_used": session.last_used_datetime.isoformat(),
             "current_url": session.current_url,

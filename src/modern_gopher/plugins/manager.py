@@ -10,10 +10,8 @@ import importlib
 import importlib.util
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-
 from modern_gopher.core.types import GopherItem, GopherItemType
 
 from .base import BasePlugin, ContentProcessor, ItemTypeHandler, PluginRegistry, ProtocolExtension

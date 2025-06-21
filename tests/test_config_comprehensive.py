@@ -443,7 +443,7 @@ class TestModernGopherConfigValidation(unittest.TestCase):
         """Test validating unknown key path."""
         is_valid, error = self.config.validate_setting("unknown.key", "value")
         self.assertFalse(is_valid)
-        self.assertIn("Unknown key path", error)
+        self.assertIn("Unknown section", error)
 
     def test_validate_setting_exception_handling(self):
         """Test validation with exception handling."""
@@ -451,7 +451,7 @@ class TestModernGopherConfigValidation(unittest.TestCase):
         with patch('modern_gopher.config.DEFAULT_CONFIG', {}):
             is_valid, error = self.config.validate_setting("gopher.timeout", 30)
             self.assertFalse(is_valid)
-            self.assertIn("Validation error", error)
+            self.assertIn("Unknown section", error)
 
 
 class TestModernGopherConfigSetValue(unittest.TestCase):

@@ -416,7 +416,7 @@ class ModernGopherConfig:
                     return (
                         False,
                         f"Log level must be one of: {
-                        ', '.join(valid_levels)}",
+                            ', '.join(valid_levels)}",
                     )
 
             if key_path == "ui.color_scheme":
@@ -425,7 +425,7 @@ class ModernGopherConfig:
                     return (
                         False,
                         f"Color scheme must be one of: {
-                        ', '.join(valid_schemes)}",
+                            ', '.join(valid_schemes)}",
                     )
 
             return True, ""
@@ -483,6 +483,15 @@ class ModernGopherConfig:
                             type(default_value).__name__}: {e}"
                     )
                     return False
+            else:
+                # For None defaults, check if this should be a boolean based on key name
+                # This handles keys like use_ipv6 that default to None but accept booleans
+                if key.startswith('use_') and isinstance(value, str):
+                    try:
+                        value = value.lower() in ("true", "1", "yes", "on")
+                    except (ValueError, TypeError) as e:
+                        logger.error(f"Cannot convert '{value}' to boolean: {e}")
+                        return False
 
             # Validate the setting first
             is_valid, error_msg = self.validate_setting(key_path, value)

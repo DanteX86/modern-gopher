@@ -1143,8 +1143,8 @@ class GopherBrowser:
                 session_name = (
                     session_name
                     or f"Session {
-                    len(
-                        self.session_manager.sessions)}"
+                        len(
+                            self.session_manager.sessions)}"
                 )
                 self.status_bar.text = f"Session saved: {session_name}"
                 logger.info(f"Session saved with ID: {session_id}")

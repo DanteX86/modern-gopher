@@ -127,19 +127,19 @@ class ImageHandler(ItemTypeHandler):
     ) -> Tuple[Optional[int], Optional[int]]:
         """Get image dimensions from content (basic implementation)."""
         try:
-            if image_format == "PNG" and len(content) > 24:
+            if image_format == "PNG" and len(content) >= 24:
                 # PNG width and height are at bytes 16-23
                 width = int.from_bytes(content[16:20], "big")
                 height = int.from_bytes(content[20:24], "big")
                 return width, height
 
-            elif image_format == "GIF" and len(content) > 10:
+            elif image_format == "GIF" and len(content) >= 10:
                 # GIF width and height are at bytes 6-9 (little-endian)
                 width = int.from_bytes(content[6:8], "little")
                 height = int.from_bytes(content[8:10], "little")
                 return width, height
 
-            elif image_format == "BMP" and len(content) > 26:
+            elif image_format == "BMP" and len(content) >= 26:
                 # BMP width and height are at bytes 18-25 (little-endian)
                 width = int.from_bytes(content[18:22], "little")
                 height = int.from_bytes(content[22:26], "little")
