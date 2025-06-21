@@ -1,0 +1,4 @@
+#!/bin/bash
+# Modern Gopher Fix Script
+cd "/Users/romulusaugustus/modern-gopher"
+python3 fix_cli.py "$@"

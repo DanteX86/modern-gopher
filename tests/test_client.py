@@ -5,18 +5,14 @@ Tests for Gopher client implementation.
 
 import os
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
 
-from modern_gopher.core.client import CacheEntry
-from modern_gopher.core.client import GopherClient
-from modern_gopher.core.protocol import DEFAULT_GOPHER_PORT
-from modern_gopher.core.protocol import GopherProtocolError
-from modern_gopher.core.types import GopherItem
-from modern_gopher.core.types import GopherItemType
+from modern_gopher.core.client import CacheEntry, GopherClient
+from modern_gopher.core.protocol import DEFAULT_GOPHER_PORT, GopherProtocolError
+from modern_gopher.core.types import GopherItem, GopherItemType
 from modern_gopher.core.url import GopherURL
 
 
@@ -76,12 +72,7 @@ class TestGopherClient:
     def test_client_initialization_with_params(self):
         """Test client initialization with parameters."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            client = GopherClient(
-                timeout=60,
-                cache_dir=temp_dir,
-                use_ipv6=True,
-                cache_ttl=7200
-            )
+            client = GopherClient(timeout=60, cache_dir=temp_dir, use_ipv6=True, cache_ttl=7200)
 
             assert client.timeout == 60
             assert client.use_ipv6 is True
@@ -91,7 +82,7 @@ class TestGopherClient:
 
     def test_client_cache_dir_creation_failure(self):
         """Test handling cache directory creation failure."""
-        with patch('os.makedirs', side_effect=OSError("Permission denied")):
+        with patch("os.makedirs", side_effect=OSError("Permission denied")):
             client = GopherClient(cache_dir="/invalid/path")
 
             # Should gracefully handle the error and disable caching
@@ -135,10 +126,9 @@ class TestGopherClient:
         # Manually expire the entry by setting it to the past
         cache_key = client._cache_key(url)
         if cache_key in client.memory_cache:
-            from datetime import datetime
-            from datetime import timedelta
-            client.memory_cache[cache_key].expires = datetime.now(
-            ) - timedelta(hours=1)
+            from datetime import datetime, timedelta
+
+            client.memory_cache[cache_key].expires = datetime.now() - timedelta(hours=1)
 
         # Should be expired
         cached_content = client._get_from_memory_cache(url)
@@ -163,7 +153,7 @@ class TestGopherClient:
 class TestClientFetching:
     """Test client resource fetching functionality."""
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_directory(self, mock_request):
         """Test fetching a directory."""
         # Mock response data
@@ -186,7 +176,7 @@ class TestClientFetching:
             "example.com", "/", DEFAULT_GOPHER_PORT, False, 30, None
         )
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_text(self, mock_request):
         """Test fetching text content."""
         text_data = b"Hello, World!\nThis is a test."
@@ -201,7 +191,7 @@ class TestClientFetching:
             "example.com", "/test.txt", DEFAULT_GOPHER_PORT, False, 30, None
         )
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_text_encoding_fallback(self, mock_request):
         """Test text fetching with encoding fallback."""
         # Invalid UTF-8 but valid Latin-1
@@ -213,10 +203,10 @@ class TestClientFetching:
 
         assert content == "Café"
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_binary(self, mock_request):
         """Test fetching binary content."""
-        binary_data = b"\x00\x01\x02\x03\xFF"
+        binary_data = b"\x00\x01\x02\x03\xff"
         mock_request.return_value = iter([binary_data])
 
         client = GopherClient()
@@ -228,16 +218,14 @@ class TestClientFetching:
             "example.com", "/test.bin", DEFAULT_GOPHER_PORT, False, 30, None
         )
 
-    @patch('modern_gopher.core.client.save_gopher_resource')
+    @patch("modern_gopher.core.client.save_gopher_resource")
     def test_download_file(self, mock_save):
         """Test downloading a file."""
         mock_save.return_value = 1024  # bytes written
 
         with tempfile.NamedTemporaryFile() as temp_file:
             client = GopherClient()
-            bytes_written = client.download_file(
-                "example.com", "/test.bin", temp_file.name
-            )
+            bytes_written = client.download_file("example.com", "/test.bin", temp_file.name)
 
             assert bytes_written == 1024
 
@@ -248,23 +236,17 @@ class TestClientFetching:
             # args[2] is the file handle
             assert args[3] == DEFAULT_GOPHER_PORT
             assert args[4] is False  # use_ssl
-            assert args[5] == 30     # timeout
-            assert args[6] is None   # use_ipv6
+            assert args[5] == 30  # timeout
+            assert args[6] is None  # use_ipv6
 
 
 class TestClientHighLevel:
     """Test high-level client functionality."""
 
-    @patch('modern_gopher.core.client.GopherClient.fetch_directory')
+    @patch("modern_gopher.core.client.GopherClient.fetch_directory")
     def test_get_resource_directory(self, mock_fetch_directory):
         """Test getting a directory resource."""
-        mock_items = [
-            GopherItem(
-                GopherItemType.TEXT_FILE,
-                "Test",
-                "/test",
-                "example.com",
-                70)]
+        mock_items = [GopherItem(GopherItemType.TEXT_FILE, "Test", "/test", "example.com", 70)]
         mock_fetch_directory.return_value = mock_items
 
         client = GopherClient()
@@ -273,58 +255,43 @@ class TestClientHighLevel:
         result = client.get_resource(url)
 
         assert result == mock_items
-        mock_fetch_directory.assert_called_once_with(
-            "example.com", "/", 70, False)
+        mock_fetch_directory.assert_called_once_with("example.com", "/", 70, False)
 
-    @patch('modern_gopher.core.client.GopherClient.fetch_text')
+    @patch("modern_gopher.core.client.GopherClient.fetch_text")
     def test_get_resource_text(self, mock_fetch_text):
         """Test getting a text resource."""
         mock_text = "Hello, World!"
         mock_fetch_text.return_value = mock_text
 
         client = GopherClient()
-        url = GopherURL(
-            "example.com",
-            "/test.txt",
-            70,
-            GopherItemType.TEXT_FILE)
+        url = GopherURL("example.com", "/test.txt", 70, GopherItemType.TEXT_FILE)
 
         result = client.get_resource(url)
 
         assert result == mock_text
-        mock_fetch_text.assert_called_once_with(
-            "example.com", "/test.txt", 70, False)
+        mock_fetch_text.assert_called_once_with("example.com", "/test.txt", 70, False)
 
-    @patch('modern_gopher.core.client.GopherClient.fetch_binary')
+    @patch("modern_gopher.core.client.GopherClient.fetch_binary")
     def test_get_resource_binary(self, mock_fetch_binary):
         """Test getting a binary resource."""
         mock_binary = b"\x00\x01\x02"
         mock_fetch_binary.return_value = mock_binary
 
         client = GopherClient()
-        url = GopherURL(
-            "example.com",
-            "/test.bin",
-            70,
-            GopherItemType.BINARY_FILE)
+        url = GopherURL("example.com", "/test.bin", 70, GopherItemType.BINARY_FILE)
 
         result = client.get_resource(url)
 
         assert result == mock_binary
-        mock_fetch_binary.assert_called_once_with(
-            "example.com", "/test.bin", 70, False)
+        mock_fetch_binary.assert_called_once_with("example.com", "/test.bin", 70, False)
 
-    @patch('modern_gopher.core.client.GopherClient.download_file')
+    @patch("modern_gopher.core.client.GopherClient.download_file")
     def test_get_resource_to_file(self, mock_download):
         """Test getting a resource and saving to file."""
         mock_download.return_value = 1024
 
         client = GopherClient()
-        url = GopherURL(
-            "example.com",
-            "/test.bin",
-            70,
-            GopherItemType.BINARY_FILE)
+        url = GopherURL("example.com", "/test.bin", 70, GopherItemType.BINARY_FILE)
 
         with tempfile.NamedTemporaryFile() as temp_file:
             result = client.get_resource(url, file_path=temp_file.name)
@@ -336,7 +303,7 @@ class TestClientHighLevel:
 
     def test_get_resource_string_url(self):
         """Test getting a resource using string URL."""
-        with patch('modern_gopher.core.client.GopherClient.fetch_directory') as mock_fetch:
+        with patch("modern_gopher.core.client.GopherClient.fetch_directory") as mock_fetch:
             mock_items = []
             mock_fetch.return_value = mock_items
 
@@ -347,14 +314,8 @@ class TestClientHighLevel:
 
     def test_get_resource_with_caching(self):
         """Test resource caching functionality."""
-        with patch('modern_gopher.core.client.GopherClient.fetch_directory') as mock_fetch:
-            mock_items = [
-                GopherItem(
-                    GopherItemType.TEXT_FILE,
-                    "Test",
-                    "/test",
-                    "example.com",
-                    70)]
+        with patch("modern_gopher.core.client.GopherClient.fetch_directory") as mock_fetch:
+            mock_items = [GopherItem(GopherItemType.TEXT_FILE, "Test", "/test", "example.com", 70)]
             mock_fetch.return_value = mock_items
 
             client = GopherClient()
@@ -372,7 +333,7 @@ class TestClientHighLevel:
 
     def test_get_resource_cache_disabled(self):
         """Test resource fetching with caching disabled."""
-        with patch('modern_gopher.core.client.GopherClient.fetch_directory') as mock_fetch:
+        with patch("modern_gopher.core.client.GopherClient.fetch_directory") as mock_fetch:
             mock_items = []
             mock_fetch.return_value = mock_items
 
@@ -394,13 +355,7 @@ class TestDiskCaching:
         with tempfile.TemporaryDirectory() as temp_dir:
             client = GopherClient(cache_dir=temp_dir)
             url = "gopher://example.com/"
-            items = [
-                GopherItem(
-                    GopherItemType.TEXT_FILE,
-                    "Test",
-                    "/test",
-                    "example.com",
-                    70)]
+            items = [GopherItem(GopherItemType.TEXT_FILE, "Test", "/test", "example.com", 70)]
 
             client._store_in_disk_cache(url, items)
 
@@ -417,13 +372,7 @@ class TestDiskCaching:
         with tempfile.TemporaryDirectory() as temp_dir:
             client = GopherClient(cache_dir=temp_dir)
             url = "gopher://example.com/"
-            items = [
-                GopherItem(
-                    GopherItemType.TEXT_FILE,
-                    "Test",
-                    "/test",
-                    "example.com",
-                    70)]
+            items = [GopherItem(GopherItemType.TEXT_FILE, "Test", "/test", "example.com", 70)]
 
             # Store and retrieve
             client._store_in_disk_cache(url, items)
@@ -465,9 +414,7 @@ class TestDiskCaching:
     def test_disk_cache_expiration(self):
         """Test disk cache expiration."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            client = GopherClient(
-                cache_dir=temp_dir,
-                cache_ttl=1)  # 1 second expiration
+            client = GopherClient(cache_dir=temp_dir, cache_ttl=1)  # 1 second expiration
             url = "gopher://example.com/test.txt"
             content = "Hello, World!"
 
@@ -476,6 +423,7 @@ class TestDiskCaching:
 
             # Sleep to ensure expiration
             import time
+
             time.sleep(1.1)
 
             cached_content = client._get_from_disk_cache(url)
@@ -505,7 +453,7 @@ class TestDiskCaching:
             cache_key = client._cache_key(url)
             cache_file = os.path.join(temp_dir, f"{cache_key}.json")
 
-            with open(cache_file, 'w') as f:
+            with open(cache_file, "w") as f:
                 f.write("invalid json")
 
             # Should handle gracefully
@@ -516,7 +464,7 @@ class TestDiskCaching:
 class TestErrorHandling:
     """Test error handling in client."""
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_directory_protocol_error(self, mock_request):
         """Test handling protocol errors when fetching directory."""
         mock_request.side_effect = GopherProtocolError("Connection failed")
@@ -526,7 +474,7 @@ class TestErrorHandling:
         with pytest.raises(GopherProtocolError):
             client.fetch_directory("example.com", "/")
 
-    @patch('modern_gopher.core.client.request_gopher_resource')
+    @patch("modern_gopher.core.client.request_gopher_resource")
     def test_fetch_text_protocol_error(self, mock_request):
         """Test handling protocol errors when fetching text."""
         mock_request.side_effect = GopherProtocolError("Connection failed")
@@ -536,7 +484,7 @@ class TestErrorHandling:
         with pytest.raises(GopherProtocolError):
             client.fetch_text("example.com", "/test.txt")
 
-    @patch('modern_gopher.core.client.save_gopher_resource')
+    @patch("modern_gopher.core.client.save_gopher_resource")
     def test_download_file_io_error(self, mock_save):
         """Test handling IO errors when downloading files."""
         mock_save.side_effect = IOError("Disk full")
@@ -545,8 +493,7 @@ class TestErrorHandling:
 
         with tempfile.NamedTemporaryFile() as temp_file:
             with pytest.raises(IOError):
-                client.download_file(
-                    "example.com", "/test.bin", temp_file.name)
+                client.download_file("example.com", "/test.bin", temp_file.name)
 
 
 if __name__ == "__main__":

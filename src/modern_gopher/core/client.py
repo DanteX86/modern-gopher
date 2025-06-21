@@ -9,23 +9,13 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
-from .protocol import DEFAULT_GOPHER_PORT
-from .protocol import request_gopher_resource
-from .protocol import save_gopher_resource
-from .types import GopherItem
-from .types import GopherItemType
-from .types import parse_gopher_directory
-from .url import GopherURL
-from .url import parse_gopher_url
+from .protocol import DEFAULT_GOPHER_PORT, request_gopher_resource, save_gopher_resource
+from .types import GopherItem, GopherItemType, parse_gopher_directory
+from .url import GopherURL, parse_gopher_url
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +56,13 @@ class GopherClient:
     and handling the different item types.
     """
 
-    def __init__(self, timeout: int = 30, cache_dir: Optional[str] = None,
-                 use_ipv6: Optional[bool] = None, cache_ttl: int = 3600):
+    def __init__(
+        self,
+        timeout: int = 30,
+        cache_dir: Optional[str] = None,
+        use_ipv6: Optional[bool] = None,
+        cache_ttl: int = 3600,
+    ):
         """
         Initialize a new GopherClient.
 
@@ -107,8 +102,7 @@ class GopherClient:
         url_str = str(url)
         return hashlib.md5(url_str.encode(), usedforsecurity=False).hexdigest()
 
-    def _get_from_memory_cache(
-            self, url: Union[str, GopherURL]) -> Optional[Any]:
+    def _get_from_memory_cache(self, url: Union[str, GopherURL]) -> Optional[Any]:
         """
         Get an item from the memory cache.
 
@@ -132,8 +126,7 @@ class GopherClient:
 
         return None
 
-    def _store_in_memory_cache(
-            self, url: Union[str, GopherURL], content: Any) -> None:
+    def _store_in_memory_cache(self, url: Union[str, GopherURL], content: Any) -> None:
         """
         Store an item in the memory cache.
 
@@ -142,23 +135,18 @@ class GopherClient:
             content: Content to cache
         """
         key = self._cache_key(url)
-        expires = (
-            datetime.now() + timedelta(seconds=self.cache_ttl)
-            if self.cache_ttl > 0 else None)
+        expires = datetime.now() + timedelta(seconds=self.cache_ttl) if self.cache_ttl > 0 else None
         self.memory_cache[key] = CacheEntry(content, expires)
 
         # Clean cache if it gets too big (simple strategy: remove oldest
         # entries)
         if len(self.memory_cache) > 100:  # arbitrary limit
-            items = sorted(
-                self.memory_cache.items(),
-                key=lambda x: x[1].last_accessed)
+            items = sorted(self.memory_cache.items(), key=lambda x: x[1].last_accessed)
             # Remove oldest 20% of entries
             for i in range(int(len(items) * 0.2)):
                 del self.memory_cache[items[i][0]]
 
-    def _get_from_disk_cache(
-            self, url: Union[str, GopherURL]) -> Optional[Any]:
+    def _get_from_disk_cache(self, url: Union[str, GopherURL]) -> Optional[Any]:
         """
         Get an item from the disk cache.
 
@@ -179,46 +167,47 @@ class GopherClient:
             return None
 
         try:
-            with open(cache_file, 'r') as f:
+            with open(cache_file, "r") as f:
                 metadata = json.load(f)
 
             # Check expiration
-            if 'expires' in metadata:
-                expires = datetime.fromisoformat(metadata['expires'])
+            if "expires" in metadata:
+                expires = datetime.fromisoformat(metadata["expires"])
                 if datetime.now() > expires:
                     # Expired
                     return None
 
             # Load content based on type
-            content_type = metadata.get('type', 'unknown')
+            content_type = metadata.get("type", "unknown")
 
-            if content_type == 'directory':
+            if content_type == "directory":
                 # Load directory listing from JSON
-                with open(data_file, 'r') as f:
+                with open(data_file, "r") as f:
                     items_data = json.load(f)
 
                 # Reconstruct GopherItems
                 items = []
                 for item_data in items_data:
-                    item_type = GopherItemType.from_char(
-                        item_data.get('type', '1'))
-                    items.append(GopherItem(
-                        item_type=item_type,
-                        display_string=item_data.get('display', ''),
-                        selector=item_data.get('selector', ''),
-                        host=item_data.get('host', ''),
-                        port=item_data.get('port', DEFAULT_GOPHER_PORT)
-                    ))
+                    item_type = GopherItemType.from_char(item_data.get("type", "1"))
+                    items.append(
+                        GopherItem(
+                            item_type=item_type,
+                            display_string=item_data.get("display", ""),
+                            selector=item_data.get("selector", ""),
+                            host=item_data.get("host", ""),
+                            port=item_data.get("port", DEFAULT_GOPHER_PORT),
+                        )
+                    )
                 return items
 
-            elif content_type == 'text':
+            elif content_type == "text":
                 # Load text content
-                with open(data_file, 'r') as f:
+                with open(data_file, "r") as f:
                     return f.read()
 
-            elif content_type == 'binary':
+            elif content_type == "binary":
                 # Load binary content
-                with open(data_file, 'rb') as f:
+                with open(data_file, "rb") as f:
                     return f.read()
 
             return None
@@ -227,8 +216,7 @@ class GopherClient:
             logger.warning(f"Error reading from cache: {e}")
             return None
 
-    def _store_in_disk_cache(
-            self, url: Union[str, GopherURL], content: Any) -> None:
+    def _store_in_disk_cache(self, url: Union[str, GopherURL], content: Any) -> None:
         """
         Store an item in the disk cache.
 
@@ -245,76 +233,69 @@ class GopherClient:
 
         try:
             # Determine content type and create metadata
-            metadata = {
-                'url': str(url),
-                'created': datetime.now().isoformat()
-            }
+            metadata = {"url": str(url), "created": datetime.now().isoformat()}
 
             if self.cache_ttl > 0:
-                metadata['expires'] = (
-                    datetime.now() +
-                    timedelta(
-                        seconds=self.cache_ttl)).isoformat()
+                metadata["expires"] = (
+                    datetime.now() + timedelta(seconds=self.cache_ttl)
+                ).isoformat()
 
             # Store based on content type
-            if isinstance(
-                content,
-                list) and all(
-                isinstance(
-                    item,
-                    GopherItem) for item in content):
+            if isinstance(content, list) and all(isinstance(item, GopherItem) for item in content):
                 # Directory listing
-                metadata['type'] = 'directory'
+                metadata["type"] = "directory"
 
                 # Convert GopherItems to serializable format
                 items_data = []
                 for item in content:
-                    items_data.append({
-                        'type': item.item_type.value,
-                        'display': item.display_string,
-                        'selector': item.selector,
-                        'host': item.host,
-                        'port': item.port
-                    })
+                    items_data.append(
+                        {
+                            "type": item.item_type.value,
+                            "display": item.display_string,
+                            "selector": item.selector,
+                            "host": item.host,
+                            "port": item.port,
+                        }
+                    )
 
                 # Write metadata
-                with open(cache_file, 'w') as f:
+                with open(cache_file, "w") as f:
                     json.dump(metadata, f)
 
                 # Write items data
-                with open(data_file, 'w') as f:
+                with open(data_file, "w") as f:
                     json.dump(items_data, f)
 
             elif isinstance(content, str):
                 # Text content
-                metadata['type'] = 'text'
+                metadata["type"] = "text"
 
                 # Write metadata
-                with open(cache_file, 'w') as f:
+                with open(cache_file, "w") as f:
                     json.dump(metadata, f)
 
                 # Write text content
-                with open(data_file, 'w') as f:
+                with open(data_file, "w") as f:
                     f.write(content)
 
             elif isinstance(content, bytes):
                 # Binary content
-                metadata['type'] = 'binary'
+                metadata["type"] = "binary"
 
                 # Write metadata
-                with open(cache_file, 'w') as f:
+                with open(cache_file, "w") as f:
                     json.dump(metadata, f)
 
                 # Write binary content
-                with open(data_file, 'wb') as f:
+                with open(data_file, "wb") as f:
                     f.write(content)
 
         except (OSError, TypeError) as e:
             logger.warning(f"Error writing to cache: {e}")
 
-    def fetch_directory(self, host: str, selector: str = "",
-                        port: int = DEFAULT_GOPHER_PORT,
-                        use_ssl: bool = False) -> List[GopherItem]:
+    def fetch_directory(
+        self, host: str, selector: str = "", port: int = DEFAULT_GOPHER_PORT, use_ssl: bool = False
+    ) -> List[GopherItem]:
         """
         Fetch a Gopher directory (menu) and parse it into GopherItems.
 
@@ -340,10 +321,14 @@ class GopherClient:
         # Parse the directory content
         return parse_gopher_directory(data.getvalue())
 
-    def fetch_text(self, host: str, selector: str,
-                   port: int = DEFAULT_GOPHER_PORT,
-                   use_ssl: bool = False,
-                   encoding: str = 'utf-8') -> str:
+    def fetch_text(
+        self,
+        host: str,
+        selector: str,
+        port: int = DEFAULT_GOPHER_PORT,
+        use_ssl: bool = False,
+        encoding: str = "utf-8",
+    ) -> str:
         """
         Fetch a Gopher text resource and return it as a string.
 
@@ -374,11 +359,11 @@ class GopherClient:
             return data.getvalue().decode(encoding)
         except UnicodeDecodeError:
             # Fall back to latin-1, which can't fail
-            return data.getvalue().decode('latin-1')
+            return data.getvalue().decode("latin-1")
 
-    def fetch_binary(self, host: str, selector: str,
-                     port: int = DEFAULT_GOPHER_PORT,
-                     use_ssl: bool = False) -> bytes:
+    def fetch_binary(
+        self, host: str, selector: str, port: int = DEFAULT_GOPHER_PORT, use_ssl: bool = False
+    ) -> bytes:
         """
         Fetch a Gopher binary resource and return it as bytes.
 
@@ -403,9 +388,14 @@ class GopherClient:
 
         return data.getvalue()
 
-    def download_file(self, host: str, selector: str, file_path: str,
-                      port: int = DEFAULT_GOPHER_PORT,
-                      use_ssl: bool = False) -> int:
+    def download_file(
+        self,
+        host: str,
+        selector: str,
+        file_path: str,
+        port: int = DEFAULT_GOPHER_PORT,
+        use_ssl: bool = False,
+    ) -> int:
         """
         Download a Gopher resource to a file.
 
@@ -426,14 +416,14 @@ class GopherClient:
         # Ensure the directory exists
         os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
 
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             return save_gopher_resource(
                 host, selector, f, port, use_ssl, self.timeout, self.use_ipv6
             )
 
-    def get_resource(self, url: Union[str, GopherURL],
-                     file_path: Optional[str] = None,
-                     use_cache: bool = True) -> Any:
+    def get_resource(
+        self, url: Union[str, GopherURL], file_path: Optional[str] = None, use_cache: bool = True
+    ) -> Any:
         """
         Fetch a Gopher resource using a URL.
 
@@ -477,15 +467,18 @@ class GopherClient:
         # directory
         if url.item_type == GopherItemType.DIRECTORY or not url.item_type:
             if file_path:
-                with open(file_path, 'wb') as f:
+                with open(file_path, "wb") as f:
                     return save_gopher_resource(
-                        url.host, url.selector, f, url.port, url.use_ssl,
-                        self.timeout, self.use_ipv6
+                        url.host,
+                        url.selector,
+                        f,
+                        url.port,
+                        url.use_ssl,
+                        self.timeout,
+                        self.use_ipv6,
                     )
             else:
-                content = self.fetch_directory(
-                    url.host, url.selector, url.port, url.use_ssl
-                )
+                content = self.fetch_directory(url.host, url.selector, url.port, url.use_ssl)
 
                 # Cache the result if enabled
                 if use_cache:
@@ -496,13 +489,9 @@ class GopherClient:
 
         elif url.item_type.is_text:
             if file_path:
-                return self.download_file(
-                    url.host, url.selector, file_path, url.port, url.use_ssl
-                )
+                return self.download_file(url.host, url.selector, file_path, url.port, url.use_ssl)
             else:
-                content = self.fetch_text(
-                    url.host, url.selector, url.port, url.use_ssl
-                )
+                content = self.fetch_text(url.host, url.selector, url.port, url.use_ssl)
 
                 # Cache the result if enabled
                 if use_cache:
@@ -513,13 +502,9 @@ class GopherClient:
 
         else:  # Binary or other type
             if file_path:
-                return self.download_file(
-                    url.host, url.selector, file_path, url.port, url.use_ssl
-                )
+                return self.download_file(url.host, url.selector, file_path, url.port, url.use_ssl)
             else:
-                content = self.fetch_binary(
-                    url.host, url.selector, url.port, url.use_ssl
-                )
+                content = self.fetch_binary(url.host, url.selector, url.port, url.use_ssl)
 
                 # Cache the result if enabled
                 if use_cache:

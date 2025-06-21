@@ -9,13 +9,15 @@ from unittest.mock import patch
 
 import pytest
 
-from modern_gopher.core.types import GopherItem
-from modern_gopher.core.types import GopherItemType
-from modern_gopher.core.types import get_item_type_for_file
-from modern_gopher.core.types import is_item_type_binary
-from modern_gopher.core.types import is_item_type_interactive
-from modern_gopher.core.types import is_item_type_text
-from modern_gopher.core.types import parse_gopher_directory
+from modern_gopher.core.types import (
+    GopherItem,
+    GopherItemType,
+    get_item_type_for_file,
+    is_item_type_binary,
+    is_item_type_interactive,
+    is_item_type_text,
+    parse_gopher_directory,
+)
 
 
 class TestGopherItemType:
@@ -23,20 +25,20 @@ class TestGopherItemType:
 
     def test_from_char_valid(self):
         """Test creating GopherItemType from valid characters."""
-        assert GopherItemType.from_char('0') == GopherItemType.TEXT_FILE
-        assert GopherItemType.from_char('1') == GopherItemType.DIRECTORY
-        assert GopherItemType.from_char('7') == GopherItemType.SEARCH_SERVER
-        assert GopherItemType.from_char('9') == GopherItemType.BINARY_FILE
-        assert GopherItemType.from_char('g') == GopherItemType.GIF_IMAGE
-        assert GopherItemType.from_char('h') == GopherItemType.HTML
-        assert GopherItemType.from_char('i') == GopherItemType.INFORMATION
+        assert GopherItemType.from_char("0") == GopherItemType.TEXT_FILE
+        assert GopherItemType.from_char("1") == GopherItemType.DIRECTORY
+        assert GopherItemType.from_char("7") == GopherItemType.SEARCH_SERVER
+        assert GopherItemType.from_char("9") == GopherItemType.BINARY_FILE
+        assert GopherItemType.from_char("g") == GopherItemType.GIF_IMAGE
+        assert GopherItemType.from_char("h") == GopherItemType.HTML
+        assert GopherItemType.from_char("i") == GopherItemType.INFORMATION
 
     def test_from_char_invalid(self):
         """Test creating GopherItemType from invalid characters."""
-        assert GopherItemType.from_char('x') is None
-        assert GopherItemType.from_char('Z') is None
-        assert GopherItemType.from_char('') is None
-        assert GopherItemType.from_char('99') is None
+        assert GopherItemType.from_char("x") is None
+        assert GopherItemType.from_char("Z") is None
+        assert GopherItemType.from_char("") is None
+        assert GopherItemType.from_char("99") is None
 
     def test_is_text_property(self):
         """Test the is_text property."""
@@ -75,29 +77,29 @@ class TestGopherItemType:
 
     def test_mime_type_property(self):
         """Test the mime_type property."""
-        assert GopherItemType.TEXT_FILE.mime_type == 'text/plain'
-        assert GopherItemType.HTML.mime_type == 'text/html'
-        assert GopherItemType.GIF_IMAGE.mime_type == 'image/gif'
-        assert GopherItemType.PDF.mime_type == 'application/pdf'
-        assert GopherItemType.BINARY_FILE.mime_type == 'application/octet-stream'
-        assert GopherItemType.SOUND_FILE.mime_type == 'audio/unknown'
+        assert GopherItemType.TEXT_FILE.mime_type == "text/plain"
+        assert GopherItemType.HTML.mime_type == "text/html"
+        assert GopherItemType.GIF_IMAGE.mime_type == "image/gif"
+        assert GopherItemType.PDF.mime_type == "application/pdf"
+        assert GopherItemType.BINARY_FILE.mime_type == "application/octet-stream"
+        assert GopherItemType.SOUND_FILE.mime_type == "audio/unknown"
 
     def test_extension_property(self):
         """Test the extension property."""
-        assert GopherItemType.TEXT_FILE.extension == '.txt'
-        assert GopherItemType.HTML.extension == '.html'
-        assert GopherItemType.GIF_IMAGE.extension == '.gif'
-        assert GopherItemType.PDF.extension == '.pdf'
-        assert GopherItemType.BINARY_FILE.extension == '.bin'
-        assert GopherItemType.SOUND_FILE.extension == '.snd'
+        assert GopherItemType.TEXT_FILE.extension == ".txt"
+        assert GopherItemType.HTML.extension == ".html"
+        assert GopherItemType.GIF_IMAGE.extension == ".gif"
+        assert GopherItemType.PDF.extension == ".pdf"
+        assert GopherItemType.BINARY_FILE.extension == ".bin"
+        assert GopherItemType.SOUND_FILE.extension == ".snd"
 
     def test_display_name_property(self):
         """Test the display_name property."""
-        assert GopherItemType.TEXT_FILE.display_name == 'Text File'
-        assert GopherItemType.DIRECTORY.display_name == 'Directory'
-        assert GopherItemType.SEARCH_SERVER.display_name == 'Search Server'
-        assert GopherItemType.HTML.display_name == 'HTML File'
-        assert GopherItemType.BINARY_FILE.display_name == 'Binary File'
+        assert GopherItemType.TEXT_FILE.display_name == "Text File"
+        assert GopherItemType.DIRECTORY.display_name == "Directory"
+        assert GopherItemType.SEARCH_SERVER.display_name == "Search Server"
+        assert GopherItemType.HTML.display_name == "HTML File"
+        assert GopherItemType.BINARY_FILE.display_name == "Binary File"
 
 
 class TestGopherItem:
@@ -198,7 +200,7 @@ class TestGopherItem:
             display_string="About this server",
             selector="/about.txt",
             host="example.com",
-            port=70
+            port=70,
         )
 
         line = item.to_menu_line()
@@ -235,7 +237,7 @@ iInformation line\t\terror.host\t1
 
     def test_parse_gopher_directory_utf8(self):
         """Test parsing directory with UTF-8 encoding."""
-        data = "0Über uns\t/about.txt\texample.com\t70\n.\n".encode('utf-8')
+        data = "0Über uns\t/about.txt\texample.com\t70\n.\n".encode("utf-8")
 
         items = parse_gopher_directory(data)
 
@@ -329,27 +331,25 @@ class TestFileTypeDetection:
 
     def test_get_item_type_for_text_files(self):
         """Test detecting text file types."""
-        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.TEXT_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.TEXT_FILE
         finally:
             os.unlink(temp_file)
 
-        with tempfile.NamedTemporaryFile(suffix='.md', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.TEXT_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.TEXT_FILE
         finally:
             os.unlink(temp_file)
 
     def test_get_item_type_for_html_files(self):
         """Test detecting HTML file types."""
-        with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
             temp_file = f.name
 
         try:
@@ -357,7 +357,7 @@ class TestFileTypeDetection:
         finally:
             os.unlink(temp_file)
 
-        with tempfile.NamedTemporaryFile(suffix='.htm', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".htm", delete=False) as f:
             temp_file = f.name
 
         try:
@@ -367,27 +367,25 @@ class TestFileTypeDetection:
 
     def test_get_item_type_for_image_files(self):
         """Test detecting image file types."""
-        with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.GIF_IMAGE
+            assert get_item_type_for_file(temp_file) == GopherItemType.GIF_IMAGE
         finally:
             os.unlink(temp_file)
 
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.IMAGE_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.IMAGE_FILE
         finally:
             os.unlink(temp_file)
 
     def test_get_item_type_for_pdf_files(self):
         """Test detecting PDF file types."""
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
             temp_file = f.name
 
         try:
@@ -397,48 +395,44 @@ class TestFileTypeDetection:
 
     def test_get_item_type_for_sound_files(self):
         """Test detecting sound file types."""
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.SOUND_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.SOUND_FILE
         finally:
             os.unlink(temp_file)
 
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.SOUND_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.SOUND_FILE
         finally:
             os.unlink(temp_file)
 
     def test_get_item_type_for_unknown_extension(self):
         """Test detecting type for unknown extension."""
-        with tempfile.NamedTemporaryFile(suffix='.unknown', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".unknown", delete=False) as f:
             temp_file = f.name
 
         try:
             # Should default to binary for unknown types
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.BINARY_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.BINARY_FILE
         finally:
             os.unlink(temp_file)
 
-    @patch('mimetypes.guess_type')
+    @patch("mimetypes.guess_type")
     def test_get_item_type_mime_fallback(self, mock_guess_type):
         """Test MIME type fallback for unknown extensions."""
         # Mock MIME type detection
-        mock_guess_type.return_value = ('text/plain', None)
+        mock_guess_type.return_value = ("text/plain", None)
 
-        with tempfile.NamedTemporaryFile(suffix='.unknown', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".unknown", delete=False) as f:
             temp_file = f.name
 
         try:
-            assert get_item_type_for_file(
-                temp_file) == GopherItemType.TEXT_FILE
+            assert get_item_type_for_file(temp_file) == GopherItemType.TEXT_FILE
         finally:
             os.unlink(temp_file)
 

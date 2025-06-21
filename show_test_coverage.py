@@ -62,8 +62,11 @@ def main():
                 lines = output.split('\n')
                 count_line = [line for line in lines if 'collected' in line]
                 if count_line:
-                    count = count_line[0].split()[0]
-                    total_count += int(count)
+                    # Extract number from "collected X items" format
+                    count_text = count_line[0]
+                    if 'collected' in count_text and 'items' in count_text:
+                        count = count_text.split()[1]  # Get the number after 'collected'
+                        total_count += int(count)
                     print(f"  • {category}: {count} tests")
     
     print("\n🔍 Test Categories:")

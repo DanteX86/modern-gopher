@@ -7,9 +7,7 @@ import pytest
 
 from modern_gopher.core.protocol import DEFAULT_GOPHER_PORT
 from modern_gopher.core.types import GopherItemType
-from modern_gopher.core.url import build_gopher_url
-from modern_gopher.core.url import is_gopher_url
-from modern_gopher.core.url import parse_gopher_url
+from modern_gopher.core.url import build_gopher_url, is_gopher_url, parse_gopher_url
 
 
 class TestGopherURLParsing:
@@ -54,9 +52,7 @@ class TestGopherURLParsing:
     def test_url_building(self):
         """Test building URLs from components."""
         url = build_gopher_url(
-            host="example.com",
-            selector="/test",
-            item_type=GopherItemType.TEXT_FILE
+            host="example.com", selector="/test", item_type=GopherItemType.TEXT_FILE
         )
 
         expected = "gopher://example.com/0/test"

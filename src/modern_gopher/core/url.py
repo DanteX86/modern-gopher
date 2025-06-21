@@ -6,8 +6,7 @@ RFC 1436 and common modern extensions to the format.
 """
 
 import logging
-from typing import Optional
-from typing import Tuple
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 from .protocol import DEFAULT_GOPHER_PORT
@@ -28,11 +27,15 @@ class GopherURL:
     - selector is the path on the server
     """
 
-    def __init__(self, host: str, selector: str = "",
-                 port: int = DEFAULT_GOPHER_PORT,
-                 item_type: Optional[GopherItemType] = None,
-                 use_ssl: bool = False,
-                 query: str = ""):
+    def __init__(
+        self,
+        host: str,
+        selector: str = "",
+        port: int = DEFAULT_GOPHER_PORT,
+        item_type: Optional[GopherItemType] = None,
+        use_ssl: bool = False,
+        query: str = "",
+    ):
         """
         Initialize a new GopherURL.
 
@@ -75,23 +78,25 @@ class GopherURL:
 
         return url
 
-    def to_tuple(self) -> Tuple[str, str, int,
-                                Optional[GopherItemType], bool, str]:
+    def to_tuple(self) -> Tuple[str, str, int, Optional[GopherItemType], bool, str]:
         """
         Convert this GopherURL to a tuple of its components.
 
         Returns:
             A tuple of (host, selector, port, item_type, use_ssl, query)
         """
-        return (self.host, self.selector, self.port,
-                self.item_type, self.use_ssl, self.query)
+        return (self.host, self.selector, self.port, self.item_type, self.use_ssl, self.query)
 
     @classmethod
-    def from_components(cls, host: str, selector: str = "",
-                        port: int = DEFAULT_GOPHER_PORT,
-                        item_type: Optional[GopherItemType] = None,
-                        use_ssl: bool = False,
-                        query: str = "") -> 'GopherURL':
+    def from_components(
+        cls,
+        host: str,
+        selector: str = "",
+        port: int = DEFAULT_GOPHER_PORT,
+        item_type: Optional[GopherItemType] = None,
+        use_ssl: bool = False,
+        query: str = "",
+    ) -> "GopherURL":
         """
         Create a GopherURL from its individual components.
 
@@ -108,7 +113,7 @@ class GopherURL:
         """
         return cls(host, selector, port, item_type, use_ssl, query)
 
-    def join(self, selector: str) -> 'GopherURL':
+    def join(self, selector: str) -> "GopherURL":
         """
         Join this URL with a new selector to create a new URL.
 
@@ -120,13 +125,12 @@ class GopherURL:
         Returns:
             A new GopherURL with the joined selector
         """
-        if selector.startswith('/'):
+        if selector.startswith("/"):
             # Absolute path - replace the selector
             new_selector = selector[1:]  # Remove leading slash
         else:
             # Relative path - join with current selector
-            current_dir = self.selector.rsplit(
-                '/', 1)[0] if '/' in self.selector else ''
+            current_dir = self.selector.rsplit("/", 1)[0] if "/" in self.selector else ""
             new_selector = f"{current_dir}/{selector}" if current_dir else selector
 
         return GopherURL(
@@ -135,7 +139,7 @@ class GopherURL:
             port=self.port,
             item_type=None,  # Reset item type for the new selector
             use_ssl=self.use_ssl,
-            query=""  # Reset query for the new selector
+            query="",  # Reset query for the new selector
         )
 
 
@@ -157,21 +161,21 @@ def parse_gopher_url(url: str) -> GopherURL:
         ValueError: If the URL is not a valid Gopher URL
     """
     # Check if it's a Gopher URL
-    if not url.startswith(('gopher://', 'gophers://')):
+    if not url.startswith(("gopher://", "gophers://")):
         raise ValueError(f"Not a Gopher URL: {url}")
 
     # Parse URL
     parsed = urlparse(url)
 
     # Determine if SSL is being used
-    use_ssl = parsed.scheme == 'gophers'
+    use_ssl = parsed.scheme == "gophers"
 
     # Get host and port
     host = parsed.netloc
     port = DEFAULT_GOPHER_PORT
 
-    if ':' in host:
-        host, port_str = host.split(':', 1)
+    if ":" in host:
+        host, port_str = host.split(":", 1)
         try:
             port = int(port_str)
         except ValueError:
@@ -180,15 +184,15 @@ def parse_gopher_url(url: str) -> GopherURL:
     # Parse path to get item type and selector
     path = parsed.path
     item_type = None
-    selector = ''
+    selector = ""
 
     if path:
         # Check if this is just the root path
-        if path == '/':
-            selector = '/'
+        if path == "/":
+            selector = "/"
         else:
             # Remove leading slash
-            if path.startswith('/'):
+            if path.startswith("/"):
                 path = path[1:]
 
             # First character might be the item type
@@ -204,18 +208,13 @@ def parse_gopher_url(url: str) -> GopherURL:
                     selector = path
             else:
                 # Empty path after removing slash - this is root
-                selector = '/'
+                selector = "/"
 
     # Handle query string
     query = parsed.query
 
     return GopherURL(
-        host=host,
-        selector=selector,
-        port=port,
-        item_type=item_type,
-        use_ssl=use_ssl,
-        query=query
+        host=host, selector=selector, port=port, item_type=item_type, use_ssl=use_ssl, query=query
     )
 
 
@@ -231,7 +230,7 @@ def is_gopher_url(url: str) -> bool:
     """
     try:
         # Simple check for scheme
-        if not url.startswith(('gopher://', 'gophers://')):
+        if not url.startswith(("gopher://", "gophers://")):
             return False
 
         # Try parsing it
@@ -241,11 +240,14 @@ def is_gopher_url(url: str) -> bool:
         return False
 
 
-def build_gopher_url(host: str, selector: str = "",
-                     port: int = DEFAULT_GOPHER_PORT,
-                     item_type: Optional[GopherItemType] = None,
-                     use_ssl: bool = False,
-                     query: str = "") -> str:
+def build_gopher_url(
+    host: str,
+    selector: str = "",
+    port: int = DEFAULT_GOPHER_PORT,
+    item_type: Optional[GopherItemType] = None,
+    use_ssl: bool = False,
+    query: str = "",
+) -> str:
     """
     Build a Gopher URL string from its components.
 

@@ -1,0 +1,25 @@
+[run]
+source = src/modern_gopher
+omit = 
+    */tests/*
+    */test_*
+    */venv/*
+    */build/*
+    */dist/*
+    */__pycache__/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+    class .*Protocol\):
+    @(abc\.)?abstractmethod
+
+[html]
+directory = htmlcov

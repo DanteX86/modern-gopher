@@ -4,20 +4,13 @@ Tests for the CLI interface.
 """
 
 import tempfile
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from modern_gopher.cli import cmd_browse
-from modern_gopher.cli import cmd_get
-from modern_gopher.cli import cmd_info
-from modern_gopher.cli import display_gopher_items
-from modern_gopher.cli import main
-from modern_gopher.cli import parse_args
+from modern_gopher.cli import cmd_browse, cmd_get, cmd_info, display_gopher_items, main, parse_args
 from modern_gopher.core.protocol import GopherProtocolError
-from modern_gopher.core.types import GopherItem
-from modern_gopher.core.types import GopherItemType
+from modern_gopher.core.types import GopherItem, GopherItemType
 
 
 class TestArgumentParsing:
@@ -25,10 +18,10 @@ class TestArgumentParsing:
 
     def test_parse_args_get_command(self):
         """Test parsing get command arguments."""
-        args = parse_args(['get', 'gopher://example.com/test.txt'])
+        args = parse_args(["get", "gopher://example.com/test.txt"])
 
-        assert args.command == 'get'
-        assert args.url == 'gopher://example.com/test.txt'
+        assert args.command == "get"
+        assert args.url == "gopher://example.com/test.txt"
         assert args.timeout == 30
         assert not args.ipv4
         assert not args.ipv6
@@ -39,19 +32,24 @@ class TestArgumentParsing:
 
     def test_parse_args_get_command_with_options(self):
         """Test parsing get command with all options."""
-        args = parse_args([
-            'get', 'gopher://example.com/test.txt',
-            '--output', '/tmp/test.txt',
-            '--markdown',
-            '--timeout', '60',
-            '--ipv4',
-            '--ssl',
-            '--verbose'
-        ])
+        args = parse_args(
+            [
+                "get",
+                "gopher://example.com/test.txt",
+                "--output",
+                "/tmp/test.txt",
+                "--markdown",
+                "--timeout",
+                "60",
+                "--ipv4",
+                "--ssl",
+                "--verbose",
+            ]
+        )
 
-        assert args.command == 'get'
-        assert args.url == 'gopher://example.com/test.txt'
-        assert args.output == '/tmp/test.txt'
+        assert args.command == "get"
+        assert args.url == "gopher://example.com/test.txt"
+        assert args.output == "/tmp/test.txt"
         assert args.markdown
         assert args.timeout == 60
         assert args.ipv4
@@ -61,10 +59,10 @@ class TestArgumentParsing:
 
     def test_parse_args_browse_command(self):
         """Test parsing browse command arguments."""
-        args = parse_args(['browse', 'gopher://example.com'])
+        args = parse_args(["browse", "gopher://example.com"])
 
-        assert args.command == 'browse'
-        assert args.url == 'gopher://example.com'
+        assert args.command == "browse"
+        assert args.url == "gopher://example.com"
         assert args.timeout == 30
         assert not args.ipv4
         assert not args.ipv6
@@ -73,15 +71,15 @@ class TestArgumentParsing:
 
     def test_parse_args_info_command(self):
         """Test parsing info command arguments."""
-        args = parse_args(['info', 'gopher://example.com/test.txt'])
+        args = parse_args(["info", "gopher://example.com/test.txt"])
 
-        assert args.command == 'info'
-        assert args.url == 'gopher://example.com/test.txt'
+        assert args.command == "info"
+        assert args.url == "gopher://example.com/test.txt"
         assert not args.verbose
 
     def test_parse_args_ipv6_option(self):
         """Test IPv6 option parsing."""
-        args = parse_args(['get', 'gopher://example.com', '--ipv6'])
+        args = parse_args(["get", "gopher://example.com", "--ipv6"])
 
         assert not args.ipv4
         assert args.ipv6
@@ -89,17 +87,17 @@ class TestArgumentParsing:
     def test_parse_args_mutually_exclusive_ip_options(self):
         """Test that IPv4 and IPv6 options are mutually exclusive."""
         with pytest.raises(SystemExit):
-            parse_args(['get', 'gopher://example.com', '--ipv4', '--ipv6'])
+            parse_args(["get", "gopher://example.com", "--ipv4", "--ipv6"])
 
     def test_parse_args_version(self):
         """Test version option."""
         with pytest.raises(SystemExit):
-            parse_args(['--version'])
+            parse_args(["--version"])
 
     def test_parse_args_help(self):
         """Test help option."""
         with pytest.raises(SystemExit):
-            parse_args(['--help'])
+            parse_args(["--help"])
 
     def test_parse_args_no_command(self):
         """Test that command is required."""
@@ -110,7 +108,7 @@ class TestArgumentParsing:
 class TestDisplayFunction:
     """Test the display_gopher_items function."""
 
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.console")
     def test_display_gopher_items_empty(self, mock_console):
         """Test displaying empty item list."""
         display_gopher_items([])
@@ -119,25 +117,19 @@ class TestDisplayFunction:
         mock_console.print.assert_called_once()
         call_args = mock_console.print.call_args[0][0]
         # Check that the panel's content contains "No items found"
-        assert hasattr(call_args, 'renderable') or "No items found" in str(
-            call_args) or "Empty Directory" in str(call_args)
+        assert (
+            hasattr(call_args, "renderable")
+            or "No items found" in str(call_args)
+            or "Empty Directory" in str(call_args)
+        )
 
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.console")
     def test_display_gopher_items_with_items(self, mock_console):
         """Test displaying item list with items."""
         items = [
-            GopherItem(
-                GopherItemType.TEXT_FILE,
-                "Test File",
-                "/test.txt",
-                "example.com",
-                70),
-            GopherItem(
-                GopherItemType.DIRECTORY,
-                "Test Dir",
-                "/test",
-                "example.com",
-                70)]
+            GopherItem(GopherItemType.TEXT_FILE, "Test File", "/test.txt", "example.com", 70),
+            GopherItem(GopherItemType.DIRECTORY, "Test Dir", "/test", "example.com", 70),
+        ]
 
         display_gopher_items(items)
 
@@ -145,20 +137,16 @@ class TestDisplayFunction:
         mock_console.print.assert_called_once()
         call_args = mock_console.print.call_args[0][0]
         # The table should contain the item information
-        assert hasattr(call_args, 'title')
+        assert hasattr(call_args, "title")
 
 
 class TestGetCommand:
     """Test the get command functionality."""
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_text_display(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_text_display(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command displaying text content."""
         # Setup mocks
         mock_url = Mock()
@@ -187,27 +175,17 @@ class TestGetCommand:
         mock_client.get_resource.assert_called_once_with(mock_url)
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_directory_display(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_directory_display(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command displaying directory content."""
         # Setup mocks
         mock_url = Mock()
         mock_url.use_ssl = False
         mock_parse_url.return_value = mock_url
 
-        mock_items = [
-            GopherItem(
-                GopherItemType.TEXT_FILE,
-                "Test",
-                "/test",
-                "example.com",
-                70)]
+        mock_items = [GopherItem(GopherItemType.TEXT_FILE, "Test", "/test", "example.com", 70)]
         mock_client = Mock()
         mock_client.get_resource.return_value = mock_items
         mock_client_class.return_value = mock_client
@@ -229,14 +207,10 @@ class TestGetCommand:
         assert result == 0
         mock_client.get_resource.assert_called_once_with(mock_url)
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_save_to_file(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_save_to_file(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command saving to file."""
         # Setup mocks
         mock_url = Mock()
@@ -262,18 +236,13 @@ class TestGetCommand:
             result = cmd_get(args)
 
             assert result == 0
-            mock_client.get_resource.assert_called_once_with(
-                mock_url, file_path=temp_file.name)
+            mock_client.get_resource.assert_called_once_with(mock_url, file_path=temp_file.name)
             mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_binary_display(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_binary_display(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command displaying binary content."""
         # Setup mocks
         mock_url = Mock()
@@ -300,14 +269,10 @@ class TestGetCommand:
         assert result == 0
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_markdown_rendering(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_markdown_rendering(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command with markdown rendering."""
         # Setup mocks
         mock_url = Mock()
@@ -335,22 +300,17 @@ class TestGetCommand:
         assert result == 0
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.GopherClient')
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
-    def test_cmd_get_protocol_error(
-            self,
-            mock_console,
-            mock_parse_url,
-            mock_client_class):
+    @patch("modern_gopher.cli.GopherClient")
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
+    def test_cmd_get_protocol_error(self, mock_console, mock_parse_url, mock_client_class):
         """Test get command handling protocol errors."""
         # Setup mocks
         mock_url = Mock()
         mock_parse_url.return_value = mock_url
 
         mock_client = Mock()
-        mock_client.get_resource.side_effect = GopherProtocolError(
-            "Connection failed")
+        mock_client.get_resource.side_effect = GopherProtocolError("Connection failed")
         mock_client_class.return_value = mock_client
 
         # Create arguments
@@ -373,8 +333,8 @@ class TestGetCommand:
 class TestInfoCommand:
     """Test the info command functionality."""
 
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
     def test_cmd_info_basic(self, mock_console, mock_parse_url):
         """Test info command basic functionality."""
         # Setup mocks
@@ -396,12 +356,11 @@ class TestInfoCommand:
         result = cmd_info(args)
 
         assert result == 0
-        mock_parse_url.assert_called_once_with(
-            "gopher://example.com/0/test.txt")
+        mock_parse_url.assert_called_once_with("gopher://example.com/0/test.txt")
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
     def test_cmd_info_with_ssl_and_query(self, mock_console, mock_parse_url):
         """Test info command with SSL and query."""
         # Setup mocks
@@ -425,8 +384,8 @@ class TestInfoCommand:
         assert result == 0
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.parse_gopher_url')
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.parse_gopher_url")
+    @patch("modern_gopher.cli.console")
     def test_cmd_info_error(self, mock_console, mock_parse_url):
         """Test info command error handling."""
         # Setup mocks
@@ -447,14 +406,10 @@ class TestInfoCommand:
 class TestBrowseCommand:
     """Test the browse command functionality."""
 
-    @patch('modern_gopher.cli.launch_browser')
-    @patch('modern_gopher.cli.console')
-    @patch('modern_gopher.cli.get_config')
-    def test_cmd_browse_basic(
-            self,
-            mock_get_config,
-            mock_console,
-            mock_launch_browser):
+    @patch("modern_gopher.cli.launch_browser")
+    @patch("modern_gopher.cli.console")
+    @patch("modern_gopher.cli.get_config")
+    def test_cmd_browse_basic(self, mock_get_config, mock_console, mock_launch_browser):
         """Test browse command basic functionality."""
         # Mock config
         mock_config = Mock()
@@ -484,14 +439,10 @@ class TestBrowseCommand:
         mock_launch_browser.assert_called_once()
         mock_console.print.assert_called()  # Startup message
 
-    @patch('modern_gopher.cli.launch_browser')
-    @patch('modern_gopher.cli.console')
-    @patch('modern_gopher.cli.get_config')
-    def test_cmd_browse_with_options(
-            self,
-            mock_get_config,
-            mock_console,
-            mock_launch_browser):
+    @patch("modern_gopher.cli.launch_browser")
+    @patch("modern_gopher.cli.console")
+    @patch("modern_gopher.cli.get_config")
+    def test_cmd_browse_with_options(self, mock_get_config, mock_console, mock_launch_browser):
         """Test browse command with all options."""
         # Mock config
         mock_config = Mock()
@@ -521,19 +472,15 @@ class TestBrowseCommand:
 
         # Check launch_browser was called with correct arguments
         call_args = mock_launch_browser.call_args
-        assert call_args[1]['url'] == "gophers://secure.example.com"
-        assert call_args[1]['timeout'] == 60
-        assert call_args[1]['use_ssl'] is True
-        assert call_args[1]['use_ipv6'] is True
+        assert call_args[1]["url"] == "gophers://secure.example.com"
+        assert call_args[1]["timeout"] == 60
+        assert call_args[1]["use_ssl"] is True
+        assert call_args[1]["use_ipv6"] is True
 
-    @patch('modern_gopher.cli.launch_browser')
-    @patch('modern_gopher.cli.console')
-    @patch('os.makedirs')
-    def test_cmd_browse_error(
-            self,
-            mock_makedirs,
-            mock_console,
-            mock_launch_browser):
+    @patch("modern_gopher.cli.launch_browser")
+    @patch("modern_gopher.cli.console")
+    @patch("os.makedirs")
+    def test_cmd_browse_error(self, mock_makedirs, mock_console, mock_launch_browser):
         """Test browse command error handling."""
         mock_launch_browser.side_effect = Exception("Browser failed")
 
@@ -556,7 +503,7 @@ class TestBrowseCommand:
 class TestMainFunction:
     """Test the main function."""
 
-    @patch('modern_gopher.cli.parse_args')
+    @patch("modern_gopher.cli.parse_args")
     def test_main_success(self, mock_parse_args):
         """Test main function success case."""
         # Setup mocks
@@ -570,8 +517,8 @@ class TestMainFunction:
         assert result == 0
         mock_args.func.assert_called_once_with(mock_args)
 
-    @patch('modern_gopher.cli.parse_args')
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.parse_args")
+    @patch("modern_gopher.cli.console")
     def test_main_keyboard_interrupt(self, mock_console, mock_parse_args):
         """Test main function handling keyboard interrupt."""
         # Setup mocks
@@ -585,8 +532,8 @@ class TestMainFunction:
         assert result == 130
         mock_console.print.assert_called()
 
-    @patch('modern_gopher.cli.parse_args')
-    @patch('modern_gopher.cli.console')
+    @patch("modern_gopher.cli.parse_args")
+    @patch("modern_gopher.cli.console")
     def test_main_unexpected_error(self, mock_console, mock_parse_args):
         """Test main function handling unexpected errors."""
         # Setup mocks
