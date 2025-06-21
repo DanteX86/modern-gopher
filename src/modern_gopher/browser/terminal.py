@@ -6,7 +6,6 @@ Gopher resources using prompt_toolkit.
 """
 
 import logging
-import os
 import sys
 from datetime import datetime
 from typing import Any
@@ -14,24 +13,19 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from urllib.parse import urljoin
 
 try:
     from prompt_toolkit import Application
-    from prompt_toolkit.filters import has_focus
-    from prompt_toolkit.formatted_text import HTML
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.layout import FormattedTextControl
     from prompt_toolkit.layout import HSplit
     from prompt_toolkit.layout import Layout
-    from prompt_toolkit.layout import VSplit
     from prompt_toolkit.layout import Window
     from prompt_toolkit.mouse_events import MouseEventType
     from prompt_toolkit.shortcuts import input_dialog
     from prompt_toolkit.styles import Style
     from prompt_toolkit.validation import ValidationError
     from prompt_toolkit.validation import Validator
-    from prompt_toolkit.widgets import Frame
     from prompt_toolkit.widgets import Label
     from prompt_toolkit.widgets import TextArea
 except ImportError:
@@ -47,7 +41,6 @@ from modern_gopher.core.client import GopherClient
 from modern_gopher.core.protocol import GopherProtocolError
 from modern_gopher.core.types import GopherItem
 from modern_gopher.core.types import GopherItemType
-from modern_gopher.core.url import GopherURL
 from modern_gopher.core.url import parse_gopher_url
 from modern_gopher.keybindings import KeyBindingManager
 from modern_gopher.keybindings import KeyContext
@@ -793,6 +786,17 @@ class GopherBrowser:
 
         return special_keys.get(key.lower(), key.upper())
 
+    def _get_contextual_help(self) -> str:
+        """Get context-sensitive help text for status bar."""
+        if self.current_context == KeyContext.DIRECTORY:
+            return "↑↓:Navigate | ↵:Open | /:Search | b:Bookmark | ?:Help"
+        elif self.current_context == KeyContext.CONTENT:
+            return "PgUp/PgDn:Scroll | ←:Back | b:Bookmark | ?:Help"
+        elif self.current_context == KeyContext.SEARCH:
+            return "↑↓:Results | ↵:Open | Esc:Clear | ?:Help"
+        else:
+            return "?:Help | q:Quit"
+
     def close_dialog(self):
         """Close any open dialog."""
         # We're not using actual floating dialogs yet, so just restore the
@@ -847,13 +851,54 @@ class GopherBrowser:
             self.status_bar.text = message
 
     def update_status_bar(self) -> None:
-        """Update the status bar with current URL and navigation help."""
+        """Update the status bar with enhanced information."""
         if self.is_loading:
-            self.status_bar.text = f" {
+            self.status_bar.text = f" ⏳ {
                 self.loading_message} | Press Ctrl+C to cancel"
         else:
-            self.status_bar.text = f" {
-                self.current_url} | ↑↓:Navigate | Enter:Open | Backspace:Back | Ctrl-Q:Quit"
+            # Enhanced status bar with rich information
+            status_parts = []
+
+            # Current URL with icon
+            status_parts.append(f"📍 {self.current_url}")
+
+            # Items/content indicator
+            if self.current_items:
+                item_count = len(self.current_items)
+                if self.is_searching:
+                    total_items = len(self.filtered_items)
+                    status_parts.append(f"📊 {item_count}/{total_items} items")
+                else:
+                    status_parts.append(f"📊 {item_count} items")
+
+                # Position indicator
+                if item_count > 0:
+                    status_parts.append(f"({self.selected_index + 1}/{item_count})")
+            else:
+                status_parts.append("📄 Content view")
+
+            # Search indicator
+            if self.is_searching:
+                status_parts.append(f"🔍 '{self.search_query}'")
+
+            # History indicator
+            if self.history.history:
+                status_parts.append(f"📚 {len(self.history.history)} history")
+
+            # Bookmarks indicator
+            try:
+                bookmark_count = len(self.bookmarks.get_all())
+                if bookmark_count > 0:
+                    status_parts.append(f"⭐ {bookmark_count} bookmarks")
+            except:
+                pass  # Skip if bookmarks not available
+
+            # Context-sensitive help
+            help_text = self._get_contextual_help()
+            if help_text:
+                status_parts.append(f"💡 {help_text}")
+
+            self.status_bar.text = " | ".join(status_parts)
 
     def update_display(self) -> None:
         """Update the display to reflect current state."""
