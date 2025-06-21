@@ -21,7 +21,8 @@ try:
     from rich.table import Table
     from rich.text import Text
 except ImportError:
-    print("Error: The 'rich' package is required. Please install it with 'pip install rich'.")
+    print("Error: The 'rich' package is required. "
+          "Please install it with 'pip install rich'.")
     sys.exit(1)
 
 from modern_gopher.browser.sessions import SessionManager
@@ -177,7 +178,8 @@ def cmd_keybindings_list(args: argparse.Namespace) -> int:
                 style="yellow")
 
         console.print(
-            "\n[dim]To customize keybindings, edit the file above or use the browser's help (H key)[/dim]")
+            "\n[dim]To customize keybindings, edit the file above or "
+            "use the browser's help (H key)[/dim]")
 
         return 0
 
@@ -336,7 +338,8 @@ Searching: {session_info['is_searching']}"""
             # Rename session
             if session_manager.rename_session(args.session_id, args.new_name):
                 console.print(
-                    f"Session renamed: {args.session_id} -> {args.new_name}", style="green")
+                    f"Session renamed: {args.session_id} -> {args.new_name}",
+                    style="green")
             else:
                 console.print(
                     f"Failed to rename session: {
@@ -494,7 +497,8 @@ def cmd_config(args: argparse.Namespace) -> int:
 
             console.print(table)
             console.print(
-                "\n[dim]Use 'modern-gopher config set <key> <value>' to change values[/dim]")
+                "\n[dim]Use 'modern-gopher config set <key> <value>' "
+                "to change values[/dim]")
 
         elif args.config_action == 'reset':
             # Reset to defaults or specific section
@@ -951,7 +955,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
             import_sessions_parser]:
         subparser.add_argument(
             "--config-file",
-            help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+            help=("Path to configuration file "
+                  "(defaults to ~/.config/modern-gopher/config.yaml)")
         )
         subparser.add_argument(
             "-v", "--verbose",
@@ -994,13 +999,14 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
 
     list_keybindings_parser.add_argument(
         "--config-file",
-        help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+        help=("Path to configuration file "
+              "(defaults to ~/.config/modern-gopher/config.yaml)")
     )
     reset_keybindings_parser.add_argument(
         "--config-file",
-        help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+        help=("Path to configuration file "
+              "(defaults to ~/.config/modern-gopher/config.yaml)")
     )
-
     list_keybindings_parser.set_defaults(func=cmd_keybindings_list)
     reset_keybindings_parser.set_defaults(func=cmd_keybindings_reset)
 
@@ -1024,7 +1030,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
     )
     get_parser.add_argument(
         "key",
-        help="Configuration key in format 'section.key' (e.g., 'gopher.timeout')")
+        help=("Configuration key in format 'section.key' "
+              "(e.g., 'gopher.timeout')"))
 
     # Set command
     set_parser = config_subparsers.add_parser(
@@ -1033,7 +1040,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
     )
     set_parser.add_argument(
         "key",
-        help="Configuration key in format 'section.key' (e.g., 'gopher.timeout')")
+        help=("Configuration key in format 'section.key' "
+              "(e.g., 'gopher.timeout')"))
     set_parser.add_argument(
         "value",
         help="Value to set"
@@ -1078,7 +1086,8 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
                       reset_parser, backup_parser, path_parser]:
         subparser.add_argument(
             "--config-file",
-            help="Path to configuration file (defaults to ~/.config/modern-gopher/config.yaml)"
+            help=("Path to configuration file "
+                  "(defaults to ~/.config/modern-gopher/config.yaml)")
         )
         subparser.add_argument(
             "-v", "--verbose",
@@ -1263,7 +1272,9 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 [bold]Version:[/bold] {info['version']}
 [bold]Author:[/bold] {info['author']}
 [bold]Type:[/bold] {info['type']}
-[bold]Status:[/bold] {'[green]Enabled[/green]' if info['enabled'] else '[red]Disabled[/red]'}
+[bold]Status:[/bold] {
+                    ('[green]Enabled[/green]' if info['enabled']
+                     else '[red]Disabled[/red]')}
 
 [bold]Description:[/bold]
 {info['description']}
@@ -1275,9 +1286,8 @@ def cmd_plugins(args: argparse.Namespace) -> int:
                         info['dependencies'])}"
 
             if info['supported_item_types']:
-                details += f"\n[bold]Supported Item Types:[/bold] {
-                    ', '.join(
-                        info['supported_item_types'])}"
+                supported_types = ', '.join(info['supported_item_types'])
+                details += f"\n[bold]Supported Item Types:[/bold] {supported_types}"
 
             panel = Panel(
                 details,

@@ -29,7 +29,8 @@ try:
     from prompt_toolkit.widgets import Label
     from prompt_toolkit.widgets import TextArea
 except ImportError:
-    print("Error: The 'prompt_toolkit' package is required. Please install it with 'pip install prompt_toolkit'.")
+    print("Error: The 'prompt_toolkit' package is required. "
+          "Please install it with 'pip install prompt_toolkit'.")
     sys.exit(1)
 
 from modern_gopher.browser.bookmarks import BookmarkManager
@@ -153,8 +154,10 @@ class GopherBrowser:
         if getattr(self.config, 'session_enabled', False):
             try:
                 self.session_manager = SessionManager(
-                    session_file=self.config.session_file, backup_sessions=getattr(
-                        self.config, 'session_backup_sessions', 5), max_sessions=getattr(
+                    session_file=self.config.session_file,
+                    backup_sessions=getattr(
+                        self.config, 'session_backup_sessions', 5),
+                    max_sessions=getattr(
                         self.config, 'session_max_sessions', 10))
             except (AttributeError, TypeError) as e:
                 # Handle case where config attributes are mocks or invalid in
@@ -266,7 +269,8 @@ class GopherBrowser:
             'go_to_url': lambda event: self.show_url_input(),
             'go_home': lambda event: self.navigate_to(DEFAULT_URL),
             'search_directory': lambda event: self._handle_search_context_aware(event),
-            'search_clear': lambda event: self._handle_search_clear_context_aware(event),
+            'search_clear': lambda event: (
+                self._handle_search_clear_context_aware(event)),
             'scroll_up': lambda event: self._handle_scroll_up_context_aware(event),
             'scroll_down': lambda event: self._handle_scroll_down_context_aware(event),
         }
@@ -316,7 +320,8 @@ class GopherBrowser:
         if '-' in key:
             modifier, base_key = key.split('-', 1)
 
-            # Special handling for certain key combinations that prompt_toolkit doesn't support
+            # Special handling for certain key combinations that
+            # prompt_toolkit doesn't support
             # Map unsupported combinations to supported ones
             unsupported_combinations = {
                 'a-left': 'left',  # Alt+left not widely supported
@@ -425,8 +430,8 @@ class GopherBrowser:
         # items)
         if not self.current_items and self.content_view.text:
             # Check if we're viewing actual content (not just preview)
-            if len(
-                    self.content_view.text) > 100:  # Arbitrary threshold for "real content"
+            # Arbitrary threshold for "real content"
+            if len(self.content_view.text) > 100:
                 return KeyContext.CONTENT
 
         # 3. Directory context - when viewing directory listings
@@ -472,7 +477,10 @@ class GopherBrowser:
         return result
 
     def get_directory_formatted_text(self) -> List[Tuple[str, str]]:
-        """Get formatted text for directory listing display (used in the rich UI version)."""
+        """Get formatted text for directory listing display.
+
+        Used in the rich UI version.
+        """
         result = []
 
         for i, item in enumerate(self.current_items):
@@ -692,7 +700,8 @@ class GopherBrowser:
             self.status_bar.text = f"Search: '{query}' - {
                 len(matching_items)} results (ESC to clear)"
         else:
-            self.status_bar.text = f"Search: '{query}' - No results found (ESC to clear)"
+            self.status_bar.text = (
+                f"Search: '{query}' - No results found (ESC to clear)")
 
     def clear_search(self):
         """Clear search and restore original directory listing."""
@@ -748,7 +757,8 @@ class GopherBrowser:
         help_text += "  • Support for all Gopher item types\n"
         help_text += "  • SSL/TLS support (gophers://)\n\n"
         help_text += "Press any key to return to browsing.\n\n"
-        help_text += "Keybindings can be customized by editing ~/.config/modern-gopher/keybindings.json"
+        help_text += "Keybindings can be customized by editing "
+        help_text += "~/.config/modern-gopher/keybindings.json"
 
         # Show in content view
         self.content_view.text = help_text
@@ -890,7 +900,7 @@ class GopherBrowser:
                 bookmark_count = len(self.bookmarks.get_all())
                 if bookmark_count > 0:
                     status_parts.append(f"⭐ {bookmark_count} bookmarks")
-            except:
+            except (AttributeError, TypeError, Exception):
                 pass  # Skip if bookmarks not available
 
             # Context-sensitive help
@@ -924,7 +934,11 @@ class GopherBrowser:
             self.update_status_bar()
 
             # Clear content view during loading
-            self.content_view.text = "\n\n  🌐 Loading content...\n\n  Please wait while connecting to the server.\n  This indicates the application is working, not hung.\n\n  Press Ctrl+C to cancel."
+            loading_text = ("\n\n  🌐 Loading content...\n\n  "
+                            "Please wait while connecting to the server.\n  "
+                            "This indicates the application is working, not hung.\n\n  "
+                            "Press Ctrl+C to cancel.")
+            self.content_view.text = loading_text
 
             # Refresh the display
             if hasattr(self, 'app') and self.app.output:
@@ -966,8 +980,9 @@ class GopherBrowser:
                             item_type = GopherItemType.TEXT_FILE
 
                         # Process through plugin system
-                        processed_content, metadata = self.plugin_manager.process_content(
-                            item_type, content)
+                        processed_content, metadata = (
+                            self.plugin_manager.process_content(
+                                item_type, content))
 
                         # Show processing info if any plugins were applied
                         processing_steps = metadata.get('processing_steps', [])
@@ -985,7 +1000,8 @@ class GopherBrowser:
                            '<body' in content.lower() or
                            '<!doctype html' in content.lower())
 
-                if is_html and not processing_info:  # Only use HTML rendering if no plugins processed it
+                # Only use HTML rendering if no plugins processed it
+                if is_html and not processing_info:
                     try:
                         # Render HTML content using Beautiful Soup
                         rendered_text, extracted_links = render_html_to_text(
@@ -1027,8 +1043,9 @@ class GopherBrowser:
                             item_type = GopherItemType.BINARY_FILE
 
                         # Process through plugin system
-                        processed_content, metadata = self.plugin_manager.process_content(
-                            item_type, content)
+                        processed_content, metadata = (
+                            self.plugin_manager.process_content(
+                                item_type, content))
 
                         # Show processing info if any plugins were applied
                         processing_steps = metadata.get('processing_steps', [])
@@ -1068,15 +1085,17 @@ class GopherBrowser:
 
     def open_selected_item(self) -> None:
         """Open the currently selected item."""
-        if not self.current_items or self.selected_index >= len(
-                self.current_items):
+        if (not self.current_items or
+                self.selected_index >= len(self.current_items)):
             return
 
         item = self.current_items[self.selected_index]
 
         # Create URL for the item
         scheme = "gophers" if self.use_ssl else "gopher"
-        url = f"{scheme}://{item.host}:{item.port}/{item.item_type.value}{item.selector}"
+        url = (
+            f"{scheme}://{item.host}:{item.port}/"
+            f"{item.item_type.value}{item.selector}")
 
         # Navigate to the URL
         self.navigate_to(url)
@@ -1234,7 +1253,9 @@ class GopherBrowser:
             text += "\nSession Management:\n"
             text += "  Ctrl+S: Save current session\n"
             text += "  S: Show this session list\n"
-            text += "\nTo load a session, use the CLI: modern-gopher session load <session_id>\n"
+            text += (
+                "\nTo load a session, use the CLI: "
+                "modern-gopher session load <session_id>\n")
 
             # Update content view with sessions
             self.content_view.text = text
@@ -1270,7 +1291,13 @@ class GopherBrowser:
             # Show initial loading state
             self.is_loading = True
             self.loading_message = "Initializing Modern Gopher Browser..."
-            self.content_view.text = "\n\n  🚀 Modern Gopher Browser\n\n  Initializing application...\n  Loading configuration and plugins...\n\n  This may take a moment on first launch.\n\n  Press Ctrl+C to quit."
+            initialization_text = (
+                "\n\n  🚀 Modern Gopher Browser\n\n  "
+                "Initializing application...\n  "
+                "Loading configuration and plugins...\n\n  "
+                "This may take a moment on first launch.\n\n  "
+                "Press Ctrl+C to quit.")
+            self.content_view.text = initialization_text
             self.update_status_bar()
 
             # Try to auto-restore session if enabled

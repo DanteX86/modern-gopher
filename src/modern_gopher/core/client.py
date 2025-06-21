@@ -142,7 +142,9 @@ class GopherClient:
             content: Content to cache
         """
         key = self._cache_key(url)
-        expires = datetime.now() + timedelta(seconds=self.cache_ttl) if self.cache_ttl > 0 else None
+        expires = (
+            datetime.now() + timedelta(seconds=self.cache_ttl)
+            if self.cache_ttl > 0 else None)
         self.memory_cache[key] = CacheEntry(content, expires)
 
         # Clean cache if it gets too big (simple strategy: remove oldest
@@ -357,7 +359,8 @@ class GopherClient:
 
         Raises:
             GopherProtocolError: If the connection or request fails
-            UnicodeDecodeError: If the content cannot be decoded with the specified encoding
+            UnicodeDecodeError: If the content cannot be decoded with the
+                specified encoding
         """
         # Collect all the data into a single bytes object
         data = BytesIO()

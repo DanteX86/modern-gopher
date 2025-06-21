@@ -58,7 +58,8 @@ class MarkdownProcessor(ContentProcessor):
             elif line.startswith('```') or line.startswith('    '):
                 markdown_indicators += 1
             # Lists
-            elif line.startswith(('- ', '* ', '+ ')) or (len(line) > 2 and line[0].isdigit() and line[1:3] == '. '):
+            elif (line.startswith(('- ', '* ', '+ ')) or
+                  (len(line) > 2 and line[0].isdigit() and line[1:3] == '. ')):
                 markdown_indicators += 1
 
         # Consider it markdown if we found multiple indicators
@@ -93,13 +94,14 @@ class MarkdownProcessor(ContentProcessor):
         except ImportError:
             # Rich not available, return content as-is
             metadata = metadata.copy()
-            metadata['processing_error'] = 'Rich library not available for markdown rendering'
+            metadata['processing_error'] = (
+                'Rich library not available for markdown rendering')
             return content, metadata
         except Exception as e:
             # Fallback on error
             metadata = metadata.copy()
-            metadata['processing_error'] = f'Markdown processing failed: {
-                str(e)}'
+            metadata['processing_error'] = (
+                f'Markdown processing failed: {str(e)}')
             return content, metadata
 
     def get_processing_order(self) -> int:

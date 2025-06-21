@@ -85,7 +85,8 @@ class BookmarkManager:
                         for url, bookmark_data in data.items()
                     }
                 logger.debug(
-                    f"Loaded {len(self._bookmarks)} bookmarks from {self.bookmarks_file}")
+                    f"Loaded {len(self._bookmarks)} bookmarks from "
+                    f"{self.bookmarks_file}")
             else:
                 # Create with some default bookmarks
                 self._create_default_bookmarks()
@@ -106,7 +107,8 @@ class BookmarkManager:
                 }
                 json.dump(data, f, indent=2, ensure_ascii=False)
             logger.debug(
-                f"Saved {len(self._bookmarks)} bookmarks to {self.bookmarks_file}")
+                f"Saved {len(self._bookmarks)} bookmarks to "
+                f"{self.bookmarks_file}")
         except Exception as e:
             logger.error(f"Error saving bookmarks: {e}")
 
@@ -116,7 +118,8 @@ class BookmarkManager:
             Bookmark(
                 url="gopher://gopher.floodgap.com",
                 title="Floodgap Gopher Server",
-                description="One of the most popular and well-maintained Gopher servers",
+                description=(
+                    "One of the most popular and well-maintained Gopher servers"),
                 tags=["popular", "reference"],
                 created_at=datetime.now().isoformat()
             ),

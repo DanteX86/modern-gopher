@@ -309,7 +309,8 @@ class ModernGopherConfig:
 
     @classmethod
     def load(
-            cls, config_path: Optional[Union[str, Path]] = None) -> 'ModernGopherConfig':
+            cls,
+            config_path: Optional[Union[str, Path]] = None) -> 'ModernGopherConfig':
         """Load configuration from file."""
         if config_path is None:
             config_path = cls.get_default_config_path()
@@ -408,7 +409,8 @@ class ModernGopherConfig:
 
                 if expected_type == bool:
                     if isinstance(value, str):
-                        if value.lower() not in ('true', 'false', '1', '0', 'yes', 'no', 'on', 'off'):
+                        if value.lower() not in (
+                                'true', 'false', '1', '0', 'yes', 'no', 'on', 'off'):
                             return False, f"Boolean value expected, got '{value}'"
                     elif not isinstance(value, bool):
                         try:

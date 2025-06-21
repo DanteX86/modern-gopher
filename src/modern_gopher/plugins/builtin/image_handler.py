@@ -108,7 +108,8 @@ class ImageHandler(ItemTypeHandler):
                 item.port}{
                 item.selector}"
 
-        display_text += "\n\nThis is a binary image file. To view it, save it to disk and open with an image viewer."
+        display_text += ("\n\nThis is a binary image file. "
+                         "To view it, save it to disk and open with an image viewer.")
 
         return display_text, metadata
 
@@ -124,7 +125,8 @@ class ImageHandler(ItemTypeHandler):
             return 'BMP'
         elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:
             return 'WebP'
-        elif content.startswith(b'\x00\x00\x01\x00') or content.startswith(b'\x00\x00\x02\x00'):
+        elif (content.startswith(b'\x00\x00\x01\x00') or
+              content.startswith(b'\x00\x00\x02\x00')):
             return 'ICO'
         return None
 

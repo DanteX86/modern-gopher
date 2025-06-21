@@ -362,9 +362,9 @@ class HTMLRenderer:
 
 
 def render_html_to_text(
-        html_content: str, extract_links: bool = True) -> Tuple[str, List[Dict[str, str]]]:
-    """
-    Convenience function to render HTML content to text.
+        html_content: str,
+        extract_links: bool = True) -> Tuple[str, List[Dict[str, str]]]:
+    """Convenience function to render HTML content to text.
 
     Args:
         html_content: Raw HTML content string

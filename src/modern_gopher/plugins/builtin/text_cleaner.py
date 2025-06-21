@@ -23,7 +23,8 @@ class TextCleaner(ContentProcessor):
             name="text_cleaner",
             version="1.0.0",
             author="Modern Gopher Team",
-            description="Cleans up text content by removing excessive whitespace and fixing formatting"
+            description=("Cleans up text content by removing excessive "
+                         "whitespace and fixing formatting")
         )
 
     def should_process(self, content: str, metadata: Dict[str, Any]) -> bool:
