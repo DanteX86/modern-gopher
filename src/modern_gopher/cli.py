@@ -529,6 +529,40 @@ def cmd_config(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_gui(args: argparse.Namespace) -> int:
+    """
+    Launch the GUI Gopher browser.
+
+    Args:
+        args: Command line arguments
+
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    try:
+        from modern_gopher.gui import launch_gui
+        
+        # Load configuration
+        config = get_config(args.config_file if hasattr(args, "config_file") else None)
+        
+        # Use URL from args or config default
+        url = getattr(args, "url", None) or config.effective_initial_url
+        
+        # Launch GUI
+        return launch_gui(initial_url=url)
+        
+    except ImportError:
+        console.print("GUI dependencies not installed. Install with:", style="bold red")
+        console.print("pip install 'modern-gopher[gui]'", style="green")
+        return 1
+    except Exception as e:
+        if getattr(args, "verbose", False):
+            console.print_exception()
+        else:
+            console.print(f"GUI Error: {e}", style="bold red")
+        return 1
+
+
 def cmd_browse(args: argparse.Namespace) -> int:
     """
     Launch the interactive Gopher browser.
@@ -544,7 +578,7 @@ def cmd_browse(args: argparse.Namespace) -> int:
         config = get_config(args.config_file if hasattr(args, "config_file") else None)
 
         # Use URL from args or config default
-        url = args.url if hasattr(args, "url") and args.url else config.effective_initial_url
+        url = getattr(args, "url", None) or config.effective_initial_url
 
         # Set log level based on verbosity
         if args.verbose:
@@ -753,9 +787,15 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
 
     # Browse command
     browse_parser = subparsers.add_parser("browse", help="Launch the interactive browser")
-    browse_parser.add_argument("url", help="The Gopher URL to browse")
+    browse_parser.add_argument("url", nargs="?", help="The Gopher URL to browse (optional, uses default from config)")
     setup_common_args(browse_parser)
     browse_parser.set_defaults(func=cmd_browse)
+
+    # GUI command
+    gui_parser = subparsers.add_parser("gui", help="Launch the GUI browser")
+    gui_parser.add_argument("url", nargs="?", help="The Gopher URL to browse (optional, uses default from config)")
+    setup_common_args(gui_parser)
+    gui_parser.set_defaults(func=cmd_gui)
 
     # Get command
     get_parser = subparsers.add_parser("get", help="Fetch a Gopher resource")
