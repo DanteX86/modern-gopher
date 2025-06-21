@@ -96,7 +96,7 @@ class GopherClient:
             A string key for the cache
         """
         url_str = str(url)
-        return hashlib.md5(url_str.encode()).hexdigest()
+        return hashlib.md5(url_str.encode(), usedforsecurity=False).hexdigest()
     
     def _get_from_memory_cache(self, url: Union[str, GopherURL]) -> Optional[Any]:
         """

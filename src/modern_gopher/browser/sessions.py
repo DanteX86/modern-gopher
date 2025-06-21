@@ -174,8 +174,8 @@ class SessionManager:
                     parsed = urlparse(current_url)
                     hostname = parsed.hostname or 'unknown'
                     session_name = f"{hostname} - {datetime.fromtimestamp(current_time).strftime('%H:%M')}"
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to parse URL for session name: {e}")
         
         # Create session object
         session = BrowserSession(

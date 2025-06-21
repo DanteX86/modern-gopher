@@ -1018,7 +1018,239 @@ def parse_args(args: List[str] = None) -> argparse.Namespace:
     
     config_parser.set_defaults(func=cmd_config)
     
+    # Plugins command with subcommands
+    plugins_parser = subparsers.add_parser(
+        "plugins",
+        help="Manage plugins"
+    )
+    
+    # Plugins subcommands
+    plugins_subparsers = plugins_parser.add_subparsers(
+        dest="plugin_action",
+        help="Plugin action to perform",
+        required=True
+    )
+    
+    # List plugins command
+    list_plugins_parser = plugins_subparsers.add_parser(
+        "list",
+        help="List all plugins"
+    )
+    list_plugins_parser.add_argument(
+        "--enabled-only", 
+        action="store_true",
+        help="Show only enabled plugins"
+    )
+    
+    # Plugin info command
+    info_plugin_parser = plugins_subparsers.add_parser(
+        "info",
+        help="Show plugin information"
+    )
+    info_plugin_parser.add_argument(
+        "plugin_name",
+        help="Name of the plugin"
+    )
+    
+    # Plugin enable command
+    enable_plugin_parser = plugins_subparsers.add_parser(
+        "enable",
+        help="Enable a plugin"
+    )
+    enable_plugin_parser.add_argument(
+        "plugin_name",
+        help="Name of the plugin to enable"
+    )
+    
+    # Plugin disable command
+    disable_plugin_parser = plugins_subparsers.add_parser(
+        "disable",
+        help="Disable a plugin"
+    )
+    disable_plugin_parser.add_argument(
+        "plugin_name",
+        help="Name of the plugin to disable"
+    )
+    
+    # Plugin configure command
+    configure_plugin_parser = plugins_subparsers.add_parser(
+        "configure",
+        help="Configure a plugin"
+    )
+    configure_plugin_parser.add_argument(
+        "plugin_name",
+        help="Name of the plugin to configure"
+    )
+    configure_plugin_parser.add_argument(
+        "--config",
+        help="JSON configuration string"
+    )
+    configure_plugin_parser.add_argument(
+        "--file",
+        help="Path to JSON configuration file"
+    )
+    
+    # Add common args to plugin subcommands
+    for subparser in [list_plugins_parser, info_plugin_parser, enable_plugin_parser,
+                     disable_plugin_parser, configure_plugin_parser]:
+        subparser.add_argument(
+            "--config-file",
+            help="Path to configuration file"
+        )
+        subparser.add_argument(
+            "-v", "--verbose", 
+            action="store_true",
+            help="Enable verbose output"
+        )
+    
+    plugins_parser.set_defaults(func=cmd_plugins)
+    
     return parser.parse_args(args)
+
+
+def cmd_plugins(args: argparse.Namespace) -> int:
+    """
+    Manage plugins.
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    try:
+        from modern_gopher.plugins.manager import get_manager
+        
+        # Load plugin manager
+        config_dir = None
+        if hasattr(args, 'config_file') and args.config_file:
+            config_dir = str(Path(args.config_file).parent)
+        
+        plugin_manager = get_manager(config_dir)
+        plugin_manager.initialize()
+        
+        if args.plugin_action == 'list':
+            # List all plugins
+            plugins_info = plugin_manager.get_plugin_info()
+            
+            if not plugins_info:
+                console.print("No plugins found", style="yellow")
+                return 0
+            
+            # Filter to enabled only if requested
+            if args.enabled_only:
+                plugins_info = {name: info for name, info in plugins_info.items() if info['enabled']}
+            
+            if not plugins_info:
+                console.print("No enabled plugins found", style="yellow")
+                return 0
+            
+            # Create table
+            table = Table(title="Modern Gopher Plugins")
+            table.add_column("Name", style="cyan", no_wrap=True)
+            table.add_column("Version", style="magenta")
+            table.add_column("Type", style="green")
+            table.add_column("Status", justify="center")
+            table.add_column("Description", style="white")
+            
+            for name, info in sorted(plugins_info.items()):
+                status = "✅" if info['enabled'] else "❌"
+                description = info['description']
+                if len(description) > 50:
+                    description = description[:47] + "..."
+                
+                table.add_row(
+                    name,
+                    info['version'],
+                    info['type'],
+                    status,
+                    description
+                )
+            
+            console.print(table)
+            console.print(f"\nTotal plugins: {len(plugins_info)}")
+            
+        elif args.plugin_action == 'info':
+            # Show plugin info
+            plugins_info = plugin_manager.get_plugin_info()
+            
+            if args.plugin_name not in plugins_info:
+                console.print(f"Plugin '{args.plugin_name}' not found", style="red")
+                return 1
+            
+            info = plugins_info[args.plugin_name]
+            
+            # Create panel with plugin details
+            details = f"""[bold]Name:[/bold] {info['name']}
+[bold]Version:[/bold] {info['version']}
+[bold]Author:[/bold] {info['author']}
+[bold]Type:[/bold] {info['type']}
+[bold]Status:[/bold] {'[green]Enabled[/green]' if info['enabled'] else '[red]Disabled[/red]'}
+
+[bold]Description:[/bold]
+{info['description']}
+"""
+            
+            if info['dependencies']:
+                details += f"\n[bold]Dependencies:[/bold] {', '.join(info['dependencies'])}"
+            
+            if info['supported_item_types']:
+                details += f"\n[bold]Supported Item Types:[/bold] {', '.join(info['supported_item_types'])}"
+            
+            panel = Panel(details, title=f"Plugin: {args.plugin_name}", border_style="blue")
+            console.print(panel)
+            
+        elif args.plugin_action == 'enable':
+            # Enable plugin
+            if plugin_manager.enable_plugin(args.plugin_name):
+                console.print(f"Plugin '{args.plugin_name}' enabled ✅", style="green")
+            else:
+                console.print(f"Plugin '{args.plugin_name}' not found", style="red")
+                return 1
+                
+        elif args.plugin_action == 'disable':
+            # Disable plugin
+            if plugin_manager.disable_plugin(args.plugin_name):
+                console.print(f"Plugin '{args.plugin_name}' disabled ❌", style="yellow")
+            else:
+                console.print(f"Plugin '{args.plugin_name}' not found", style="red")
+                return 1
+                
+        elif args.plugin_action == 'configure':
+            # Configure plugin
+            import json
+            
+            # Get configuration from arguments
+            config_data = {}
+            
+            if args.config:
+                config_data = json.loads(args.config)
+            elif args.file:
+                with open(args.file, 'r') as f:
+                    config_data = json.load(f)
+            else:
+                console.print("No configuration provided. Use --config or --file", style="red")
+                return 1
+            
+            if plugin_manager.configure_plugin(args.plugin_name, config_data):
+                console.print(f"Plugin '{args.plugin_name}' configured ✅", style="green")
+            else:
+                console.print(f"Plugin '{args.plugin_name}' not found", style="red")
+                return 1
+        
+        return 0
+    
+    except json.JSONDecodeError as e:
+        console.print(f"Invalid JSON configuration: {e}", style="red")
+        return 1
+    except FileNotFoundError:
+        console.print(f"Configuration file not found: {args.file}", style="red")
+        return 1
+    except Exception as e:
+        console.print(f"Plugin management error: {e}", style="bold red")
+        if hasattr(args, 'verbose') and args.verbose:
+            console.print_exception()
+        return 1
 
 
 def main() -> int:

@@ -22,6 +22,7 @@ try:
     from prompt_toolkit.filters import has_focus
     from prompt_toolkit.shortcuts import input_dialog
     from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.mouse_events import MouseEventType
 except ImportError:
     print("Error: The 'prompt_toolkit' package is required. Please install it with 'pip install prompt_toolkit'.")
     sys.exit(1)
@@ -151,6 +152,20 @@ class GopherBrowser:
         self.keybinding_manager = KeyBindingManager()
         self.current_context = KeyContext.BROWSER
         self._last_keybinding_context = None  # Track context changes
+        
+        # Initialize plugin system
+        try:
+            from modern_gopher.plugins.manager import get_manager
+            self.plugin_manager = get_manager(str(self.config.config_dir))
+            self.plugin_manager.initialize()
+            logger.info("Plugin system initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize plugin system: {e}")
+            self.plugin_manager = None
+        
+        # Initialize loading state
+        self.is_loading = False
+        self.loading_message = ""
         
         # Create UI components
         self.setup_ui()
@@ -798,7 +813,10 @@ class GopherBrowser:
     
     def update_status_bar(self) -> None:
         """Update the status bar with current URL and navigation help."""
-        self.status_bar.text = f" {self.current_url} | ↑↓:Navigate | Enter:Open | Backspace:Back | Ctrl-Q:Quit"
+        if self.is_loading:
+            self.status_bar.text = f" {self.loading_message} | Press Ctrl+C to cancel"
+        else:
+            self.status_bar.text = f" {self.current_url} | ↑↓:Navigate | Enter:Open | Backspace:Back | Ctrl-Q:Quit"
     
     def update_display(self) -> None:
         """Update the display to reflect current state."""
@@ -818,6 +836,18 @@ class GopherBrowser:
     def navigate_to(self, url: str) -> None:
         """Navigate to a specified URL."""
         try:
+            # Set loading state
+            self.is_loading = True
+            self.loading_message = f"Loading {url}..."
+            self.update_status_bar()
+            
+            # Clear content view during loading
+            self.content_view.text = "\n\n  🌐 Loading content...\n\n  Please wait while connecting to the server.\n  This indicates the application is working, not hung.\n\n  Press Ctrl+C to cancel."
+            
+            # Refresh the display
+            if hasattr(self, 'app') and self.app.output:
+                self.app.invalidate()
+            
             # Parse the URL
             gopher_url = parse_gopher_url(url)
             if self.use_ssl and not gopher_url.use_ssl:
@@ -837,16 +867,43 @@ class GopherBrowser:
                 self.selected_index = 0
                 self.content_view.text = "Select an item to view."
             elif isinstance(content, str):
-                # Text content - check if it's HTML
+                # Text content - process through plugin system
                 self.current_items = []
                 
-                # Detect HTML content by checking for HTML tags and item type
+                # Process content through plugins if available
+                processed_content = content
+                processing_info = ""
+                
+                if self.plugin_manager:
+                    try:
+                        # Determine item type from URL
+                        item_type = gopher_url.item_type
+                        if not item_type:
+                            # Default to text file for string content
+                            from modern_gopher.core.types import GopherItemType
+                            item_type = GopherItemType.TEXT_FILE
+                        
+                        # Process through plugin system
+                        processed_content, metadata = self.plugin_manager.process_content(
+                            item_type, content
+                        )
+                        
+                        # Show processing info if any plugins were applied
+                        processing_steps = metadata.get('processing_steps', [])
+                        if processing_steps:
+                            processing_info = f" (processed by: {', '.join(processing_steps)})"
+                        
+                    except Exception as e:
+                        logger.error(f"Plugin processing failed: {e}")
+                        processed_content = content
+                
+                # Check for HTML content and handle it
                 is_html = (gopher_url.item_type == 'h' or 
                           '<html' in content.lower() or 
                           '<body' in content.lower() or 
                           '<!doctype html' in content.lower())
                 
-                if is_html:
+                if is_html and not processing_info:  # Only use HTML rendering if no plugins processed it
                     try:
                         # Render HTML content using Beautiful Soup
                         rendered_text, extracted_links = render_html_to_text(content)
@@ -859,17 +916,50 @@ class GopherBrowser:
                         self.status_bar.text = f"HTML content rendered ({len(extracted_links)} links found)"
                         
                     except Exception as e:
-                        # Fall back to raw text if HTML rendering fails
-                        logger.warning(f"HTML rendering failed, showing raw content: {e}")
-                        self.content_view.text = content
-                        self.status_bar.text = "HTML rendering failed, showing raw content"
+                        # Fall back to processed or raw text if HTML rendering fails
+                        logger.warning(f"HTML rendering failed, showing processed content: {e}")
+                        self.content_view.text = processed_content
+                        self.status_bar.text = f"HTML rendering failed{processing_info}"
                 else:
-                    # Regular text content
-                    self.content_view.text = content
+                    # Use processed content
+                    self.content_view.text = processed_content
+                    if processing_info:
+                        self.status_bar.text = f"Content loaded{processing_info}"
             else:
-                # Binary content
+                # Binary content - try to process through plugins
                 self.current_items = []
-                self.content_view.text = f"Binary content ({len(content)} bytes)"
+                processed_content = f"Binary content ({len(content)} bytes)"
+                processing_info = ""
+                
+                if self.plugin_manager:
+                    try:
+                        # Determine item type from URL  
+                        item_type = gopher_url.item_type
+                        if not item_type:
+                            # Default to binary file for bytes content
+                            from modern_gopher.core.types import GopherItemType
+                            item_type = GopherItemType.BINARY_FILE
+                        
+                        # Process through plugin system
+                        processed_content, metadata = self.plugin_manager.process_content(
+                            item_type, content
+                        )
+                        
+                        # Show processing info if any plugins were applied
+                        processing_steps = metadata.get('processing_steps', [])
+                        if processing_steps:
+                            processing_info = f" (processed by: {', '.join(processing_steps)})"
+                        
+                    except Exception as e:
+                        logger.error(f"Plugin processing failed: {e}")
+                
+                self.content_view.text = processed_content
+                if processing_info:
+                    self.status_bar.text = f"Binary content{processing_info}"
+            
+            # Clear loading state
+            self.is_loading = False
+            self.loading_message = ""
             
             # Update display
             self.update_display()
@@ -878,11 +968,17 @@ class GopherBrowser:
             self._update_context()
             
         except GopherProtocolError as e:
+            self.is_loading = False
+            self.loading_message = ""
             self.content_view.text = f"Error: {e}"
             logger.error(f"Protocol error: {e}")
+            self.update_status_bar()
         except Exception as e:
+            self.is_loading = False
+            self.loading_message = ""
             self.content_view.text = f"Unexpected error: {e}"
             logger.exception(f"Error navigating to {url}: {e}")
+            self.update_status_bar()
     
     def open_selected_item(self) -> None:
         """Open the currently selected item."""
@@ -1080,11 +1176,20 @@ class GopherBrowser:
     def run(self) -> int:
         """Run the browser application."""
         try:
+            # Show initial loading state
+            self.is_loading = True
+            self.loading_message = "Initializing Modern Gopher Browser..."
+            self.content_view.text = "\n\n  🚀 Modern Gopher Browser\n\n  Initializing application...\n  Loading configuration and plugins...\n\n  This may take a moment on first launch.\n\n  Press Ctrl+C to quit."
+            self.update_status_bar()
+            
             # Try to auto-restore session if enabled
             session_restored = False
             if self.session_manager and self.config.session_auto_restore:
+                self.loading_message = "Restoring previous session..."
+                self.update_status_bar()
                 session_restored = self.auto_restore_session()
                 if session_restored:
+                    self.is_loading = False
                     self.status_bar.text = "Previous session restored"
             
             # Initial navigation (only if session wasn't restored)

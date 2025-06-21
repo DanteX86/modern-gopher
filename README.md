@@ -1,6 +1,15 @@
 # Modern Gopher
 
+[![CI/CD Pipeline](https://github.com/DanteX86/modern-gopher/actions/workflows/ci.yml/badge.svg)](https://github.com/DanteX86/modern-gopher/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/DanteX86/modern-gopher/branch/main/graph/badge.svg)](https://codecov.io/gh/DanteX86/modern-gopher)
+[![PyPI version](https://badge.fury.io/py/modern-gopher.svg)](https://badge.fury.io/py/modern-gopher)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 A modern, feature-rich terminal-based client for the Gopher protocol built in Python.
+
+> 🔥 **New in v0.2.0**: Loading indicators, session management, and enhanced user experience!
 
 ## 🎯 Current Status
 

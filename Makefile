@@ -1,4 +1,4 @@
-.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check suggestion suggetion
+.PHONY: help test test-fast lint coverage clean recommendations install demo keybindings setup check suggestion suggetion debug debug-syntax debug-style debug-security debug-types debug-all debug-summary
 
 # Default target
 help:
@@ -15,6 +15,15 @@ help:
 	@echo "  check         - Run comprehensive checks"
 	@echo "  recommendations - Show development recommendations"
 	@echo "  suggestion      - Get smart suggestions for next steps"
+	@echo ""
+	@echo "Debug Commands:"
+	@echo "  debug           - Comprehensive error analysis (recommended)"
+	@echo "  debug-syntax    - Check Python syntax"
+	@echo "  debug-style     - Check code style/linting (flake8)"
+	@echo "  debug-security  - Check security issues (bandit)"
+	@echo "  debug-types     - Check type annotations (mypy)"
+	@echo "  debug-all       - Run all debug checks (verbose)"
+	@echo "  debug-summary   - Show debugging command summary"
 
 # Install dependencies
 install:
@@ -73,6 +82,63 @@ keybindings:
 	@echo "Current keybindings:"
 	@python -m modern_gopher.cli keybindings list
 
+# Syntax check
+debug-syntax:
+	@echo "Running syntax check..."
+	@python3 -m py_compile *.py
+
+# Style check
+debug-style:
+	@echo "Running style and lint check (flake8)..."
+	@flake8 .
+
+# Security check
+debug-security:
+	@echo "Running security check (bandit)..."
+	@bandit -r src/ -c .bandit
+
+# Type check
+debug-types:
+	@echo "Running type check (mypy)..."
+	@mypy .
+
+# Enhanced debug target with comprehensive error checking
+debug:
+	@echo "=== Comprehensive Debug Analysis ==="
+	@echo "Running all debugging tools to identify and report errors..."
+	@echo ""
+	@echo "1. Syntax Check:"
+	@python3 -m py_compile *.py 2>/dev/null && echo "   ✅ No syntax errors" || echo "   ❌ Syntax errors found"
+	@echo ""
+	@echo "2. Style Check (flake8):"
+	@flake8 --select=E9,F63,F7,F82 --show-source --statistics . 2>/dev/null && echo "   ✅ No critical style errors" || echo "   ⚠️  Style issues found (see above)"
+	@echo ""
+	@echo "3. Security Check (bandit):"
+	@bandit -f txt src/ -c .bandit 2>/dev/null | grep -E "(High|Medium):" | wc -l | xargs -I {} echo "   Found {} security issues"
+	@echo ""
+	@echo "4. Test Execution:"
+	@pytest --tb=no -q 2>/dev/null && echo "   ✅ All tests passing" || echo "   ❌ Test failures detected"
+	@echo ""
+	@echo "=== Debug Summary Complete ==="
+	@echo "For detailed output, run individual commands:"
+	@echo "  make debug-syntax    - Python syntax check"
+	@echo "  make debug-style     - Code style analysis"
+	@echo "  make debug-security  - Security vulnerability scan"
+	@echo "  make debug-types     - Type checking"
+
+# Run all debug checks (verbose)
+debug-all: debug-syntax debug-style debug-security debug-types
+
+# Summary of debugging steps
+debug-summary:
+	@echo "=== Debugging Summary ==="
+	@echo "1. Syntax Check: make debug-syntax"
+	@echo "2. Style/Lint Check: make debug-style"
+	@echo "3. Security Check: make debug-security"
+	@echo "4. Type Check: make debug-types"
+	@echo "5. Comprehensive Debug: make debug"
+	@echo "Combine All: make debug-all"
+
 # Comprehensive checks
 check:
 	@echo "Running comprehensive checks..."
@@ -85,7 +151,6 @@ check:
 	@echo "4. Checking configuration..."
 	@python -c "from modern_gopher.config import get_config; c=get_config(); print('✅ Configuration loaded successfully')"
 	@echo "All checks passed! ✅"
-
 # Show development recommendations
 recommendations:
 	@echo "=== Development Recommendations ==="

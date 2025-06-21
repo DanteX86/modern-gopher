@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build distributions
+      run: |
+        python -m build
+    
+    - name: Check distributions
+      run: |
+        twine check dist/*
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.10
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+    
+    - name: Create GitHub Release Assets
+      run: |
+        # Create a tarball of the source
+        tar -czf modern-gopher-${{ github.ref_name }}-source.tar.gz src/ README.md LICENSE CHANGELOG.md requirements.txt pyproject.toml
+    
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./modern-gopher-${{ github.ref_name }}-source.tar.gz
+        asset_name: modern-gopher-${{ github.ref_name }}-source.tar.gz
+        asset_content_type: application/gzip
+
+  notify:
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.build-and-publish.result == 'success'
+      run: |
+        echo "✅ Release ${{ github.ref_name }} published successfully!"
+    
+    - name: Notify failure
+      if: needs.build-and-publish.result == 'failure'
+      run: |
+        echo "❌ Release ${{ github.ref_name }} failed to publish!"
+        exit 1
+

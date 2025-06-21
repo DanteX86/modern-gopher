@@ -41,7 +41,7 @@ dependencies = [
     "PyYAML>=6.0",
     "beautifulsoup4>=4.11.0",
 ]
-dynamic = ["description"]
+dynamic = []
 
 [project.optional-dependencies]
 dev = [
@@ -128,7 +128,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
     "integration: marks tests as integration tests (may require network)",
-    "slow: marks tests as slow (deselect with '-m "not slow"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "unit: marks tests as unit tests",
 ]
 filterwarnings = [
@@ -156,8 +156,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\bProtocol\):",
-    "@(abc\.)?abstractmethod",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
 show_missing = true
 skip_covered = false
