@@ -391,5 +391,233 @@ class TestKeyBindingManager(unittest.TestCase):
         self.assertTrue(expected_categories.issubset(categories))
 
 
+class TestKeyBindingManagerEdgeCases(unittest.TestCase):
+    """Test edge cases and error handling for KeyBindingManager."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        # Create temporary directory for test config
+        import tempfile
+        self.test_dir = Path(tempfile.mkdtemp())
+        self.test_config = self.test_dir / "test_keybindings.json"
+        self.manager = KeyBindingManager(self.test_config)
+    
+    def tearDown(self):
+        """Clean up test fixtures."""
+        import shutil
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_get_default_config_path(self):
+        """Test get_default_config_path with missing directories."""
+        # Test the static method directly
+        default_path = KeyBindingManager.get_default_config_path()
+        
+        # Should return a Path object with correct structure
+        self.assertIsInstance(default_path, Path)
+        self.assertTrue(str(default_path).endswith("keybindings.json"))
+        self.assertIn(".config", str(default_path))
+        self.assertIn("modern-gopher", str(default_path))
+
+    def test_set_keys_for_nonexistent_action(self):
+        """Test set_keys_for_action with non-existent action."""
+        result = self.manager.set_keys_for_action("nonexistent_action", ["x"])
+        
+        # Should return False and log error
+        self.assertFalse(result)
+
+    def test_set_keys_with_conflicts(self):
+        """Test set_keys_for_action with conflicting keys."""
+        # Try to set keys that conflict with existing binding
+        result = self.manager.set_keys_for_action("refresh", ["q"])  # q is used by quit
+        
+        # Should return False due to conflict
+        self.assertFalse(result)
+        
+        # Original keys should be restored
+        original_keys = self.manager.get_keys_for_action("refresh")
+        self.assertIn("r", original_keys)
+
+    def test_disable_nonexistent_binding(self):
+        """Test disable_binding with non-existent action."""
+        result = self.manager.disable_binding("nonexistent_action")
+        
+        # Should return False
+        self.assertFalse(result)
+
+    def test_enable_nonexistent_binding(self):
+        """Test enable_binding with non-existent action."""
+        result = self.manager.enable_binding("nonexistent_action")
+        
+        # Should return False
+        self.assertFalse(result)
+
+    def test_enable_binding_with_conflicts(self):
+        """Test enable_binding when conflicts exist."""
+        # First disable a binding
+        self.manager.disable_binding("quit")
+        
+        # Add a new binding with same keys using add_binding (which forces even conflicts)
+        new_binding = KeyBinding(
+            action="test_action",
+            keys=["q"],
+            context=KeyContext.GLOBAL,
+            description="Test action"
+        )
+        # Force add it by directly manipulating the internal state
+        self.manager.bindings["test_action"] = new_binding
+        for key in new_binding.keys:
+            self.manager.key_to_action[(key, new_binding.context)] = new_binding.action
+            if new_binding.context == KeyContext.GLOBAL:
+                for context in KeyContext:
+                    self.manager.key_to_action[(key, context)] = new_binding.action
+        
+        # Try to enable the original quit binding
+        result = self.manager.enable_binding("quit")
+        
+        # Should return False due to conflict
+        self.assertFalse(result)
+
+    def test_validate_key_edge_cases(self):
+        """Test validate_key with various edge cases."""
+        # Test invalid modifier count
+        self.assertFalse(self.manager.validate_key("c-a-x"))  # Multiple modifiers
+        
+        # Test empty key part
+        self.assertFalse(self.manager.validate_key("c-"))  # Empty after modifier
+        
+        # Test key with + (not normalized)
+        self.assertFalse(self.manager.validate_key("ctrl+x"))  # Should be c-x
+        
+        # Test exception handling by passing invalid input
+        self.assertFalse(self.manager.validate_key(""))  # Empty string
+        self.assertFalse(self.manager.validate_key(None))  # None input
+
+    def test_from_dict_error_handling(self):
+        """Test from_dict with invalid data."""
+        # Add some valid data first so we have a baseline
+        valid_data = {
+            "test_valid_action": {
+                "keys": ["x"],
+                "context": "global",
+                "description": "Valid test action",
+                "category": "test",
+                "enabled": True
+            }
+        }
+        
+        mixed_data = {
+            **valid_data,
+            "invalid_action": {
+                "keys": ["y"],
+                "context": "invalid_context",  # Invalid context
+                "description": "Test"
+            },
+            "missing_keys_action": {
+                "context": "global",
+                "description": "Test missing keys"
+                # Missing "keys" field
+            }
+        }
+        
+        # Should not raise exception, but log warnings
+        self.manager.from_dict(mixed_data)
+        
+        # Should only have the valid binding, not the invalid ones
+        self.assertIn("test_valid_action", self.manager.bindings)
+        self.assertNotIn("invalid_action", self.manager.bindings)
+        self.assertNotIn("missing_keys_action", self.manager.bindings)
+
+    def test_save_to_file_error_handling(self):
+        """Test save_to_file with invalid path."""
+        # Try to save to an invalid path (like a directory that can't be created)
+        invalid_path = Path("/root/cannot_create_this/keybindings.json")
+        
+        result = self.manager.save_to_file(invalid_path)
+        
+        # Should return False on error
+        self.assertFalse(result)
+
+    def test_load_from_nonexistent_file(self):
+        """Test load_from_file with non-existent file."""
+        nonexistent_file = Path("/nonexistent/path/keybindings.json")
+        
+        result = self.manager.load_from_file(nonexistent_file)
+        
+        # Should return False
+        self.assertFalse(result)
+
+    def test_load_from_file_error_handling(self):
+        """Test load_from_file with corrupted file."""
+        # Create a corrupted JSON file
+        corrupted_file = self.test_dir / "corrupted.json"
+        with open(corrupted_file, "w") as f:
+            f.write("{ invalid json content ")
+        
+        result = self.manager.load_from_file(corrupted_file)
+        
+        # Should return False on error
+        self.assertFalse(result)
+
+    def test_backup_keybindings_default_path(self):
+        """Test backup_keybindings with default path generation."""
+        # Test backup with auto-generated timestamp path
+        result = self.manager.backup_keybindings()
+        
+        # Should succeed
+        self.assertTrue(result)
+        
+        # Check that backup file was created
+        backup_files = list(self.test_config.parent.glob("keybindings_backup_*.json"))
+        self.assertGreater(len(backup_files), 0)
+
+    def test_from_dict_with_disabled_bindings(self):
+        """Test from_dict with disabled bindings to hit line 575."""
+        data_with_disabled = {
+            "disabled_action": {
+                "keys": ["z"],
+                "context": "global",
+                "description": "Disabled action",
+                "category": "test",
+                "enabled": False  # This should hit line 575
+            }
+        }
+        
+        self.manager.from_dict(data_with_disabled)
+        
+        # Should have the binding but it should be disabled
+        self.assertIn("disabled_action", self.manager.bindings)
+        self.assertFalse(self.manager.bindings["disabled_action"].enabled)
+        
+        # Should not be in key mappings since it's disabled
+        self.assertIsNone(self.manager.get_action_for_key("z", KeyContext.GLOBAL))
+
+    def test_enable_binding_conflict_scenario(self):
+        """Test enable_binding conflict detection to hit lines 439, 442-443."""
+        # Disable a binding first
+        self.manager.disable_binding("quit")
+        
+        # Manually add a conflicting binding to force the conflict scenario
+        conflicting_binding = KeyBinding(
+            action="conflicting_action",
+            keys=["q"],  # Same key as quit
+            context=KeyContext.GLOBAL,
+            description="Conflicting action"
+        )
+        
+        # Add it manually to force the conflict
+        self.manager.bindings["conflicting_action"] = conflicting_binding
+        for key in conflicting_binding.keys:
+            self.manager.key_to_action[(key, conflicting_binding.context)] = conflicting_binding.action
+            if conflicting_binding.context == KeyContext.GLOBAL:
+                for context in KeyContext:
+                    self.manager.key_to_action[(key, context)] = conflicting_binding.action
+        
+        # Now try to enable the quit binding - this should trigger conflict detection
+        result = self.manager.enable_binding("quit")
+        
+        # Should return False due to conflict (hits lines 439, 442-443)
+        self.assertFalse(result)
+
+
 if __name__ == "__main__":
     unittest.main()
