@@ -5,10 +5,15 @@ This module provides low-level functions for communicating with Gopher servers
 according to RFC 1436.
 """
 
+import logging
 import socket
 import ssl
-from typing import Optional, Tuple, Union, List, BinaryIO, Iterator
-import logging
+from typing import BinaryIO
+from typing import Iterator
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 # Constants
 DEFAULT_GOPHER_PORT = 70
@@ -33,22 +38,22 @@ class GopherTimeoutError(GopherProtocolError):
     pass
 
 
-def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT, 
+def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT,
                   timeout: int = DEFAULT_TIMEOUT, use_ssl: bool = False,
                   use_ipv6: Optional[bool] = None) -> socket.socket:
     """
     Create and connect a socket to the specified Gopher server.
-    
+
     Args:
         host: The hostname or IP address of the Gopher server
         port: The port to connect to (default: 70, the standard Gopher port)
         timeout: Socket timeout in seconds
         use_ssl: Whether to use SSL/TLS for the connection
         use_ipv6: Force IPv6 usage if True, IPv4 if False, or auto-detect if None
-        
+
     Returns:
         A connected socket object
-        
+
     Raises:
         GopherConnectionError: If connection fails
         GopherTimeoutError: If connection times out
@@ -57,15 +62,16 @@ def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT,
     if use_ipv6 is None:
         # Auto-detect IP version to use
         try:
-            addrinfo = socket.getaddrinfo(host, port, 
+            addrinfo = socket.getaddrinfo(host, port,
                                           socket.AF_UNSPEC, socket.SOCK_STREAM)
             if not addrinfo:
                 raise GopherConnectionError(f"Could not resolve host: {host}")
-                
+
             # Use the first available address format
             family, socktype, proto, _, addr = addrinfo[0]
         except socket.gaierror as e:
-            raise GopherConnectionError(f"Failed to resolve host '{host}': {e}")
+            raise GopherConnectionError(
+                f"Failed to resolve host '{host}': {e}")
     else:
         # Use specified IP version
         family = socket.AF_INET6 if use_ipv6 else socket.AF_INET
@@ -75,23 +81,25 @@ def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT,
             addrinfo = socket.getaddrinfo(host, port, family, socktype)
             if not addrinfo:
                 raise GopherConnectionError(
-                    f"Could not resolve host {host} with {'IPv6' if use_ipv6 else 'IPv4'}")
-                
+                    f"Could not resolve host {host} with {
+                        'IPv6' if use_ipv6 else 'IPv4'}")
+
             _, _, _, _, addr = addrinfo[0]
         except socket.gaierror as e:
             raise GopherConnectionError(
-                f"Failed to resolve host '{host}' with {'IPv6' if use_ipv6 else 'IPv4'}: {e}")
-    
+                f"Failed to resolve host '{host}' with {
+                    'IPv6' if use_ipv6 else 'IPv4'}: {e}")
+
     try:
         # Create and connect the socket
         sock = socket.socket(family, socktype, proto)
         sock.settimeout(timeout)
-        
+
         # Add SSL/TLS wrapper if requested
         if use_ssl:
             context = ssl.create_default_context()
             sock = context.wrap_socket(sock, server_hostname=host)
-        
+
         sock.connect(addr)
         return sock
     except socket.timeout as e:
@@ -105,11 +113,11 @@ def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT,
 def send_request(sock: socket.socket, selector: str = "") -> None:
     """
     Send a request to the Gopher server.
-    
+
     Args:
         sock: Connected socket to the Gopher server
         selector: The selector string to request (empty for the root menu)
-        
+
     Raises:
         GopherProtocolError: If the request cannot be sent
     """
@@ -123,17 +131,19 @@ def send_request(sock: socket.socket, selector: str = "") -> None:
         raise GopherProtocolError(f"Failed to send request: {e}")
 
 
-def receive_response(sock: socket.socket, buffer_size: int = DEFAULT_BUFFER_SIZE) -> Iterator[bytes]:
+def receive_response(
+        sock: socket.socket,
+        buffer_size: int = DEFAULT_BUFFER_SIZE) -> Iterator[bytes]:
     """
     Receive response data from the Gopher server.
-    
+
     Args:
         sock: Connected socket to the Gopher server
         buffer_size: Size of buffer chunks to read
-        
+
     Yields:
         Chunks of data received from the server
-        
+
     Raises:
         GopherProtocolError: If data cannot be received
     """
@@ -151,17 +161,19 @@ def receive_response(sock: socket.socket, buffer_size: int = DEFAULT_BUFFER_SIZE
         sock.close()
 
 
-def request_gopher_resource(host: str, selector: str = "", 
-                           port: int = DEFAULT_GOPHER_PORT,
-                           use_ssl: bool = False,
-                           timeout: int = DEFAULT_TIMEOUT,
-                           use_ipv6: Optional[bool] = None,
-                           buffer_size: int = DEFAULT_BUFFER_SIZE) -> Iterator[bytes]:
+def request_gopher_resource(
+        host: str,
+        selector: str = "",
+        port: int = DEFAULT_GOPHER_PORT,
+        use_ssl: bool = False,
+        timeout: int = DEFAULT_TIMEOUT,
+        use_ipv6: Optional[bool] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE) -> Iterator[bytes]:
     """
     Request a resource from a Gopher server and return the response.
-    
+
     This is a high-level function that handles the entire request/response cycle.
-    
+
     Args:
         host: The hostname or IP address of the Gopher server
         selector: The selector string to request (empty for the root menu)
@@ -170,23 +182,23 @@ def request_gopher_resource(host: str, selector: str = "",
         timeout: Socket timeout in seconds
         use_ipv6: Force IPv6 usage if True, IPv4 if False, or auto-detect if None
         buffer_size: Size of buffer chunks to read
-        
+
     Yields:
         Chunks of data received from the server
-        
+
     Raises:
         GopherProtocolError: If any part of the request fails
     """
     try:
         logger.debug(f"Connecting to {host}:{port} for selector '{selector}'")
         sock = create_socket(host, port, timeout, use_ssl, use_ipv6)
-        
+
         logger.debug(f"Sending request for selector '{selector}'")
         send_request(sock, selector)
-        
+
         logger.debug("Receiving response")
         yield from receive_response(sock, buffer_size)
-        
+
         logger.debug("Resource retrieval completed")
     except (GopherProtocolError, GopherConnectionError, GopherTimeoutError) as e:
         logger.error(f"Error retrieving resource: {e}")
@@ -197,14 +209,14 @@ def request_gopher_resource(host: str, selector: str = "",
 
 
 def save_gopher_resource(host: str, selector: str, output_file: BinaryIO,
-                        port: int = DEFAULT_GOPHER_PORT,
-                        use_ssl: bool = False,
-                        timeout: int = DEFAULT_TIMEOUT,
-                        use_ipv6: Optional[bool] = None,
-                        buffer_size: int = DEFAULT_BUFFER_SIZE) -> int:
+                         port: int = DEFAULT_GOPHER_PORT,
+                         use_ssl: bool = False,
+                         timeout: int = DEFAULT_TIMEOUT,
+                         use_ipv6: Optional[bool] = None,
+                         buffer_size: int = DEFAULT_BUFFER_SIZE) -> int:
     """
     Request a Gopher resource and save it to a file.
-    
+
     Args:
         host: The hostname or IP address of the Gopher server
         selector: The selector string to request
@@ -214,10 +226,10 @@ def save_gopher_resource(host: str, selector: str, output_file: BinaryIO,
         timeout: Socket timeout in seconds
         use_ipv6: Force IPv6 usage if True, IPv4 if False, or auto-detect if None
         buffer_size: Size of buffer chunks to read
-        
+
     Returns:
         The number of bytes written to the file
-        
+
     Raises:
         GopherProtocolError: If any part of the request fails
         IOError: If writing to the file fails
@@ -229,7 +241,7 @@ def save_gopher_resource(host: str, selector: str, output_file: BinaryIO,
         ):
             output_file.write(chunk)
             total_bytes += len(chunk)
-        
+
         return total_bytes
     except IOError as e:
         raise IOError(f"Failed to write to output file: {e}")
@@ -238,10 +250,10 @@ def save_gopher_resource(host: str, selector: str, output_file: BinaryIO,
 def is_gopher_url(url: str) -> bool:
     """
     Check if a URL is a valid Gopher URL.
-    
+
     Args:
         url: The URL to check
-        
+
     Returns:
         True if the URL is a valid Gopher URL, False otherwise
     """

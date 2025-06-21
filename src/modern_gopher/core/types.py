@@ -5,18 +5,22 @@ This module defines the different Gopher item types as specified in RFC 1436
 and provides functions for handling each type.
 """
 
-from enum import Enum
-from typing import Dict, Optional, List, Tuple, NamedTuple
+import logging
 import mimetypes
 import os
-import logging
+from enum import Enum
+from typing import Dict
+from typing import List
+from typing import NamedTuple
+from typing import Optional
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class GopherItemType(Enum):
     """Enum representing Gopher item types as specified in RFC 1436."""
-    
+
     # Standard Gopher item types
     TEXT_FILE = '0'
     DIRECTORY = '1'
@@ -29,28 +33,28 @@ class GopherItemType(Enum):
     TELNET = '8'
     BINARY_FILE = '9'
     REDUNDANT_SERVER = '+'
-    
+
     # Gopher+ and commonly used extensions
     TN3270_SESSION = 'T'
     GIF_IMAGE = 'g'
     IMAGE_FILE = 'I'
     SOUND_FILE = 's'
-    
+
     # Additional item types that are common in modern Gopher implementations
     HTML = 'h'
     INFORMATION = 'i'
     DOCUMENT = 'd'
     PDF = 'P'
     CALENDAR = 'c'
-    
+
     @classmethod
     def from_char(cls, char: str) -> Optional['GopherItemType']:
         """
         Get the GopherItemType corresponding to a character identifier.
-        
+
         Args:
             char: The single character identifier
-            
+
         Returns:
             The matching GopherItemType or None if not found
         """
@@ -58,47 +62,47 @@ class GopherItemType(Enum):
             return next(item for item in cls if item.value == char)
         except StopIteration:
             return None
-    
+
     @property
     def is_text(self) -> bool:
         """
         Check if this item type represents textual content.
-        
+
         Returns:
             True if the item contains text content, False otherwise
         """
-        return self in (self.TEXT_FILE, self.DIRECTORY, 
-                       self.ERROR, self.INFORMATION)
-    
+        return self in (self.TEXT_FILE, self.DIRECTORY,
+                        self.ERROR, self.INFORMATION)
+
     @property
     def is_binary(self) -> bool:
         """
         Check if this item type represents binary content.
-        
+
         Returns:
             True if the item contains binary content, False otherwise
         """
-        return self in (self.BINHEX_FILE, self.DOS_BINARY, 
-                       self.UUENCODED_FILE, self.BINARY_FILE,
-                       self.GIF_IMAGE, self.IMAGE_FILE, self.SOUND_FILE,
-                       self.PDF)
-    
+        return self in (self.BINHEX_FILE, self.DOS_BINARY,
+                        self.UUENCODED_FILE, self.BINARY_FILE,
+                        self.GIF_IMAGE, self.IMAGE_FILE, self.SOUND_FILE,
+                        self.PDF)
+
     @property
     def is_interactive(self) -> bool:
         """
         Check if this item type represents an interactive service.
-        
+
         Returns:
             True if the item is interactive, False otherwise
         """
-        return self in (self.CSO_PHONE_BOOK, self.SEARCH_SERVER, 
-                       self.TELNET, self.TN3270_SESSION)
-    
+        return self in (self.CSO_PHONE_BOOK, self.SEARCH_SERVER,
+                        self.TELNET, self.TN3270_SESSION)
+
     @property
     def mime_type(self) -> str:
         """
         Get the MIME type for this Gopher item type.
-        
+
         Returns:
             A string containing the MIME type
         """
@@ -120,12 +124,12 @@ class GopherItemType(Enum):
             self.CALENDAR: 'text/calendar',
         }
         return mime_map.get(self, 'application/octet-stream')
-    
+
     @property
     def extension(self) -> str:
         """
         Get a default file extension for this Gopher item type.
-        
+
         Returns:
             A string containing a file extension (with dot)
         """
@@ -147,12 +151,12 @@ class GopherItemType(Enum):
             self.CALENDAR: '.ics',
         }
         return ext_map.get(self, '.bin')
-    
+
     @property
     def display_name(self) -> str:
         """
         Get a human-readable display name for this item type.
-        
+
         Returns:
             A string containing the display name
         """
@@ -184,7 +188,7 @@ class GopherItemType(Enum):
 class GopherItem(NamedTuple):
     """
     Represents a single item in a Gopher menu (directory listing).
-    
+
     According to RFC 1436, a Gopher menu item consists of:
     - Item type (single character)
     - Display string (user-visible label)
@@ -197,38 +201,38 @@ class GopherItem(NamedTuple):
     selector: str
     host: str
     port: int
-    
+
     @classmethod
     def from_menu_line(cls, line: str) -> Optional['GopherItem']:
         """
         Parse a line from a Gopher menu into a GopherItem.
-        
+
         Args:
             line: A line from a Gopher menu response
-            
+
         Returns:
             A GopherItem if the line is valid, None otherwise
         """
         # Skip empty lines or lines not starting with a valid item type
         if not line or line == '.':
             return None
-        
+
         parts = line.split('\t')
         if len(parts) < 4:
             return None
-        
+
         # First character of the first part is the item type
         # The rest of the first part is the display string
         if not parts[0]:
             return None
-            
+
         type_char = parts[0][0]
         display_string = parts[0][1:].strip()
-        
+
         # The remaining parts are selector, host, and port
         selector = parts[1]
         host = parts[2]
-        
+
         # Port can be empty, in which case default to 70
         if len(parts) > 3 and parts[3]:
             try:
@@ -237,13 +241,13 @@ class GopherItem(NamedTuple):
                 port = 70
         else:
             port = 70
-            
+
         # Get the item type from the character
         item_type = GopherItemType.from_char(type_char)
         if item_type is None:
             # Use binary file as default for unknown types
             item_type = GopherItemType.BINARY_FILE
-            
+
         return cls(
             item_type=item_type,
             display_string=display_string,
@@ -251,29 +255,34 @@ class GopherItem(NamedTuple):
             host=host,
             port=port
         )
-    
+
     def to_menu_line(self) -> str:
         """
         Convert this GopherItem back to a Gopher menu line.
-        
+
         Returns:
             A formatted line suitable for inclusion in a Gopher menu
         """
-        return f"{self.item_type.value}{self.display_string}\t{self.selector}\t{self.host}\t{self.port}"
+        return f"{
+            self.item_type.value}{
+            self.display_string}\t{
+            self.selector}\t{
+                self.host}\t{
+                    self.port}"
 
 
 def parse_gopher_directory(data: bytes) -> List[GopherItem]:
     """
     Parse a Gopher directory (menu) response into a list of GopherItems.
-    
+
     Args:
         data: The raw bytes received from a Gopher server for a directory
-        
+
     Returns:
         A list of GopherItem objects parsed from the data
     """
     items = []
-    
+
     # Split the data into lines and process each line
     try:
         # Try UTF-8 first, as it's most common nowadays
@@ -281,28 +290,28 @@ def parse_gopher_directory(data: bytes) -> List[GopherItem]:
     except UnicodeDecodeError:
         # Fall back to Latin-1, which can't fail
         text = data.decode('latin-1')
-        
+
     lines = text.splitlines()
-    
+
     for line in lines:
         # End of menu is marked by a line containing just a dot
         if line == '.':
             break
-            
+
         item = GopherItem.from_menu_line(line)
         if item:
             items.append(item)
-            
+
     return items
 
 
 def is_item_type_text(item_type: GopherItemType) -> bool:
     """
     Check if a Gopher item type represents text content.
-    
+
     Args:
         item_type: The GopherItemType to check
-        
+
     Returns:
         True if the item type represents text content, False otherwise
     """
@@ -312,10 +321,10 @@ def is_item_type_text(item_type: GopherItemType) -> bool:
 def is_item_type_binary(item_type: GopherItemType) -> bool:
     """
     Check if a Gopher item type represents binary content.
-    
+
     Args:
         item_type: The GopherItemType to check
-        
+
     Returns:
         True if the item type represents binary content, False otherwise
     """
@@ -325,10 +334,10 @@ def is_item_type_binary(item_type: GopherItemType) -> bool:
 def is_item_type_interactive(item_type: GopherItemType) -> bool:
     """
     Check if a Gopher item type represents an interactive service.
-    
+
     Args:
         item_type: The GopherItemType to check
-        
+
     Returns:
         True if the item type represents an interactive service, False otherwise
     """
@@ -338,19 +347,19 @@ def is_item_type_interactive(item_type: GopherItemType) -> bool:
 def get_item_type_for_file(filename: str) -> GopherItemType:
     """
     Determine the appropriate Gopher item type for a local file.
-    
+
     Args:
         filename: Path to the file to check
-        
+
     Returns:
         The most appropriate GopherItemType for the file
     """
     if os.path.isdir(filename):
         return GopherItemType.DIRECTORY
-        
+
     # Check file extension
     _, ext = os.path.splitext(filename.lower())
-    
+
     # Map common extensions to Gopher types
     ext_map = {
         '.txt': GopherItemType.TEXT_FILE,
@@ -369,13 +378,13 @@ def get_item_type_for_file(filename: str) -> GopherItemType:
         '.doc': GopherItemType.DOCUMENT,
         '.ics': GopherItemType.CALENDAR,
     }
-    
+
     if ext in ext_map:
         return ext_map[ext]
-    
+
     # Fall back to MIME type detection
     mime_type, _ = mimetypes.guess_type(filename)
-    
+
     if mime_type:
         if mime_type.startswith('text/'):
             return GopherItemType.TEXT_FILE
@@ -385,7 +394,6 @@ def get_item_type_for_file(filename: str) -> GopherItemType:
             return GopherItemType.SOUND_FILE
         elif mime_type == 'application/pdf':
             return GopherItemType.PDF
-    
+
     # Default to binary for unknown types
     return GopherItemType.BINARY_FILE
-
