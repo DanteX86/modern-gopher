@@ -122,11 +122,21 @@ See [docs/KEYBINDINGS.md](docs/KEYBINDINGS.md) for comprehensive keybinding docu
 
 ## Documentation
 
+### User Documentation
 - **[User Guide](docs/USER_GUIDE.md)** - Comprehensive guide for new and experienced users
-- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Essential commands and shortcuts
-- **[Manual](MANUAL.md)** - Complete technical documentation
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Essential commands and shortcuts  
 - **[Keybindings](docs/KEYBINDINGS.md)** - Customizable keyboard shortcuts
+- **[Manual](MANUAL.md)** - Complete technical documentation
+
+### Developer Documentation
+- **[API Reference](docs/API.md)** - Complete API documentation for all classes and methods
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and component overview
+- **[TDD CLI](docs/TDD_CLI.md)** - Test-driven development tools
+- **[Contributing](CONTRIBUTING.md)** - Development guidelines and standards
+
+### Project Information
 - **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[Security](SECURITY.md)** - Security policy and vulnerability reporting
 
 ## Development
 
