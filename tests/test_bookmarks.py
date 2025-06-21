@@ -2,12 +2,9 @@
 Tests for the bookmark management system.
 """
 
-import os
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
-import pytest
 
 from modern_gopher.browser.bookmarks import Bookmark
 from modern_gopher.browser.bookmarks import BookmarkManager

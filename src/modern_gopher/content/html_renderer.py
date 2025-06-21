@@ -16,11 +16,6 @@ from bs4 import BeautifulSoup
 from bs4 import NavigableString
 from bs4 import Tag
 from rich.console import Console
-from rich.markdown import Markdown
-from rich.panel import Panel
-from rich.rule import Rule
-from rich.table import Table
-from rich.text import Text
 
 logger = logging.getLogger(__name__)
 

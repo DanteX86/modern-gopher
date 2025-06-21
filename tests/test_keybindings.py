@@ -7,8 +7,6 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import patch
 
 from modern_gopher.keybindings import KeyBinding
 from modern_gopher.keybindings import KeyBindingManager

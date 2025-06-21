@@ -348,7 +348,6 @@ class SessionManager:
             self.sessions.values(),
             key=lambda s: s.last_used,
             reverse=True)
-        sessions_to_keep = sessions_by_time[:self.max_sessions]
         sessions_to_remove = sessions_by_time[self.max_sessions:]
 
         # Remove old sessions

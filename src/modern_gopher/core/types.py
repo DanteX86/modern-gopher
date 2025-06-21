@@ -9,11 +9,9 @@ import logging
 import mimetypes
 import os
 from enum import Enum
-from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Tuple
 
 logger = logging.getLogger(__name__)
 

@@ -11,14 +11,9 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
-from typing import Dict
 from typing import List
-from typing import Optional
-from typing import Union
 
 try:
-    import rich
     from rich.console import Console
     from rich.logging import RichHandler
     from rich.markdown import Markdown
@@ -36,14 +31,10 @@ from modern_gopher.browser.terminal import launch_browser
 from modern_gopher.config import ModernGopherConfig
 from modern_gopher.config import get_config
 from modern_gopher.core.client import GopherClient
-from modern_gopher.core.protocol import DEFAULT_GOPHER_PORT
 from modern_gopher.core.protocol import GopherProtocolError
 from modern_gopher.core.types import GopherItem
-from modern_gopher.core.types import GopherItemType
-from modern_gopher.core.url import GopherURL
 from modern_gopher.core.url import parse_gopher_url
 from modern_gopher.keybindings import KeyBindingManager
-from modern_gopher.keybindings import KeyContext
 
 # Initialize rich console
 console = Console()

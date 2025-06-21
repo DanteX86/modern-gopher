@@ -3,10 +3,7 @@
 Tests for the CLI interface.
 """
 
-import os
 import tempfile
-from io import StringIO
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -18,7 +15,6 @@ from modern_gopher.cli import cmd_info
 from modern_gopher.cli import display_gopher_items
 from modern_gopher.cli import main
 from modern_gopher.cli import parse_args
-from modern_gopher.cli import setup_common_args
 from modern_gopher.core.protocol import GopherProtocolError
 from modern_gopher.core.types import GopherItem
 from modern_gopher.core.types import GopherItemType

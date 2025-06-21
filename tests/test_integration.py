@@ -205,7 +205,6 @@ class TestCLIIntegration:
         from unittest.mock import Mock
 
         from modern_gopher.cli import cmd_get
-        from modern_gopher.cli import parse_args
 
         # Create mock args for get command
         args = Mock()

@@ -11,11 +11,9 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
-import pytest
 
 from modern_gopher.browser.sessions import BrowserSession
 from modern_gopher.browser.sessions import SessionManager
@@ -244,13 +242,13 @@ class TestSessionManager:
             "search_query": ""
         }
 
-        session_id1 = self.manager.save_session(
+        self.manager.save_session(
             browser_state=browser_state,
             session_name="Session 1",
             session_id="session_1"
         )
         time.sleep(0.01)
-        session_id2 = self.manager.save_session(
+        self.manager.save_session(
             browser_state=browser_state,
             session_name="Session 2",
             session_id="session_2"
@@ -544,7 +542,7 @@ class TestBrowserSessionIntegration:
 
             # Simulate saving a session directly (bypass dialog)
             browser_state = browser.get_browser_state()
-            session_id = browser.session_manager.save_session(
+            browser.session_manager.save_session(
                 browser_state=browser_state,
                 session_name="Test Session"
             )

@@ -9,8 +9,6 @@ in the Modern Gopher browser.
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock
-from unittest.mock import patch
 
 from modern_gopher.content.html_renderer import HTMLRenderer
 from modern_gopher.content.html_renderer import render_html_to_text

@@ -3,15 +3,10 @@
 Tests for Gopher client implementation.
 """
 
-import json
 import os
 import tempfile
 from datetime import datetime
 from datetime import timedelta
-from io import BytesIO
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import mock_open
 from unittest.mock import patch
 
 import pytest

@@ -9,17 +9,13 @@ import hashlib
 import json
 import logging
 import os
-import tempfile
 from datetime import datetime
 from datetime import timedelta
 from io import BytesIO
 from typing import Any
-from typing import BinaryIO
 from typing import Dict
-from typing import Iterator
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from .protocol import DEFAULT_GOPHER_PORT

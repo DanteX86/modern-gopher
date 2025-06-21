@@ -6,13 +6,8 @@ RFC 1436 and common modern extensions to the format.
 """
 
 import logging
-import re
-from typing import Any
-from typing import Dict
 from typing import Optional
 from typing import Tuple
-from urllib.parse import parse_qs
-from urllib.parse import unquote
 from urllib.parse import urlparse
 
 from .protocol import DEFAULT_GOPHER_PORT

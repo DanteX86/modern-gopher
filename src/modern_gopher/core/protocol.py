@@ -10,10 +10,7 @@ import socket
 import ssl
 from typing import BinaryIO
 from typing import Iterator
-from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # Constants
 DEFAULT_GOPHER_PORT = 70
@@ -25,17 +22,14 @@ logger = logging.getLogger(__name__)
 
 class GopherProtocolError(Exception):
     """Exception raised for Gopher protocol errors."""
-    pass
 
 
 class GopherConnectionError(GopherProtocolError):
     """Exception raised for Gopher connection errors."""
-    pass
 
 
 class GopherTimeoutError(GopherProtocolError):
     """Exception raised for Gopher timeout errors."""
-    pass
 
 
 def create_socket(host: str, port: int = DEFAULT_GOPHER_PORT,

@@ -6,7 +6,6 @@ import os
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
 
 from modern_gopher.config import DEFAULT_CONFIG

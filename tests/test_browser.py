@@ -6,10 +6,6 @@ This test suite covers the GopherBrowser class and HistoryManager
 to improve test coverage from 16% to 60%+.
 """
 
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -17,7 +13,6 @@ import pytest
 
 from modern_gopher.browser.terminal import GopherBrowser
 from modern_gopher.browser.terminal import HistoryManager
-from modern_gopher.config import ModernGopherConfig
 from modern_gopher.core.types import GopherItem
 from modern_gopher.core.types import GopherItemType
 

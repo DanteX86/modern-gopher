@@ -8,13 +8,10 @@ for managing keybindings across the application.
 
 import json
 import logging
-import os
 from dataclasses import dataclass
-from dataclasses import field
 from enum import Enum
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional

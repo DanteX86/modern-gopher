@@ -4,9 +4,7 @@ Tests for Gopher protocol implementation.
 """
 
 import socket
-import ssl
 from io import BytesIO
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
