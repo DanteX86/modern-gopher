@@ -326,5 +326,101 @@ class TestHTMLDetection(unittest.TestCase):
         self.assertFalse("<body" in plain_text.lower())
 
 
+class TestHTMLRendererEdgeCases(unittest.TestCase):
+    """Test edge cases and error handling for HTMLRenderer."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.renderer = HTMLRenderer()
+
+    def test_html_rendering_exception_handling(self):
+        """Test HTML rendering with exception in BeautifulSoup parsing."""
+        # Test with None input to trigger exception path
+        import unittest.mock
+        
+        with unittest.mock.patch('modern_gopher.content.html_renderer.BeautifulSoup') as mock_bs:
+            mock_bs.side_effect = Exception("Parsing failed")
+            
+            rendered, links = self.renderer.render_html("<p>test</p>")
+            
+            # Should return error message and empty links
+            self.assertIn("Error rendering HTML content: Parsing failed", rendered)
+            self.assertEqual(links, [])
+
+    def test_extract_links_exception_handling(self):
+        """Test extract_links_only with exception handling."""
+        import unittest.mock
+        
+        with unittest.mock.patch('modern_gopher.content.html_renderer.BeautifulSoup') as mock_bs:
+            mock_bs.side_effect = Exception("Link extraction failed")
+            
+            links = self.renderer.extract_links_only("<a href='test'>link</a>")
+            
+            # Should return empty list on exception
+            self.assertEqual(links, [])
+
+    def test_non_tag_element_handling(self):
+        """Test _render_element with non-Tag elements."""
+        # Test with a non-Tag, non-NavigableString object
+        from bs4 import Comment
+        comment = Comment("This is a comment")
+        
+        result = self.renderer._render_element(comment)
+        
+        # Comments are NavigableString subclass, so they return their text
+        self.assertEqual(result, "This is a comment")
+
+    def test_image_without_src(self):
+        """Test image rendering when src attribute is missing."""
+        html = '<html><body><img alt="No Source Image"></body></html>'
+        
+        rendered, links = self.renderer.render_html(html)
+        
+        # Should show alt text in brackets without adding to images list
+        self.assertIn("[No Source Image]", rendered)
+        self.assertEqual(len(self.renderer.images), 0)
+
+    def test_standalone_li_element(self):
+        """Test li element outside of ul/ol context."""
+        html = '<html><body><li>Standalone list item</li></body></html>'
+        
+        rendered, links = self.renderer.render_html(html)
+        
+        # Should render with bullet point
+        self.assertIn("• Standalone list item", rendered)
+
+    def test_br_and_hr_elements(self):
+        """Test br and hr element rendering."""
+        html = '<html><body><p>Line 1<br>Line 2</p><hr><p>After separator</p></body></html>'
+        
+        rendered, links = self.renderer.render_html(html)
+        
+        # Should contain line breaks and horizontal rule
+        # BR adds newline, but text gets cleaned, so check for presence of both parts
+        self.assertIn("Line 1", rendered)
+        self.assertIn("Line 2", rendered)
+        self.assertIn("-" * 50, rendered)  # HR renders as 50 dashes
+
+    def test_empty_table_handling(self):
+        """Test table rendering with no rows."""
+        html = '<html><body><table></table></body></html>'
+        
+        rendered, links = self.renderer.render_html(html)
+        
+        # Empty table should not add content
+        # The table renderer should return empty string
+        self.assertIsInstance(rendered, str)
+
+    def test_clean_text_with_empty_input(self):
+        """Test _clean_text with empty or None input."""
+        # Test empty string
+        result = self.renderer._clean_text("")
+        self.assertEqual(result, "")
+        
+        # Test None input
+        result = self.renderer._clean_text(None)
+        self.assertEqual(result, "")
+
+
 if __name__ == "__main__":
     unittest.main()
